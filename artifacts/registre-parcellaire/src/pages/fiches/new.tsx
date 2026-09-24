@@ -28,7 +28,6 @@ const ficheSchema = z.object({
   localite: z.string().max(120, '120 caractères maximum').optional(),
   avenue: z.string().min(1, 'Requis'),
   parcelleNo: z.string().min(1, 'Requis'),
-  plaqueNo: z.string().optional(),
   
   proprietaireNom: z.string().min(1, 'Requis'),
   telephone: z.string().min(1, 'Requis'),
@@ -115,7 +114,7 @@ export default function FicheNew() {
   const form = useForm<FicheFormValues>({
     resolver: zodResolver(ficheSchema),
     defaultValues: {
-      commune: '', quartier: '', localite: '', avenue: '', parcelleNo: '', plaqueNo: '',
+      commune: '', quartier: '', localite: '', avenue: '', parcelleNo: '',
       proprietaireNom: '', telephone: '', typeOccupation: '', usageParcelle: '',
       superficie: '' as any,
       plaqueExistante: '', statutPaiement: '', recuNo: '', sensibilisation: '',
@@ -214,7 +213,6 @@ export default function FicheNew() {
       localite: data.localite?.trim() || null,
       avenue: data.avenue,
       parcelleNo: data.parcelleNo,
-      plaqueNo: data.plaqueNo,
       proprietaireNom: data.proprietaireNom,
       telephone: data.telephone,
       typeOccupation: data.typeOccupation,
@@ -350,13 +348,6 @@ export default function FicheNew() {
                       </FormItem>
                     )} />
                   </div>
-                  <FormField control={form.control} name="localite" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-base font-semibold">Localité (ligne LOC/ de la plaque)</FormLabel>
-                      <FormControl><Input className="h-12" placeholder="Ex. Foire Agricole — ne pas répéter le quartier" maxLength={120} {...field} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <FormField control={form.control} name="avenue" render={({ field }) => (
                       <FormItem className="md:col-span-2">
@@ -373,10 +364,10 @@ export default function FicheNew() {
                       </FormItem>
                     )} />
                   </div>
-                  <FormField control={form.control} name="plaqueNo" render={({ field }) => (
+                  <FormField control={form.control} name="localite" render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-base font-semibold">N° Plaque (Si existante)</FormLabel>
-                      <FormControl><Input className="h-12" placeholder="Ex: A123..." {...field} /></FormControl>
+                      <FormLabel className="text-base font-semibold">Localité (ligne LOC/ de la plaque)</FormLabel>
+                      <FormControl><Input className="h-12" placeholder="Ex. Foire Agricole — ne pas répéter le quartier" maxLength={120} {...field} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )} />

@@ -274,8 +274,8 @@ export default function FicheDetail({ exampleFiche }: { exampleFiche?: Fiche }) 
               <tr>
                 <td className={thClass}>N° de la Parcelle :</td>
                 <td className={tdClass}>{fiche.parcelleNo}</td>
-                <td className={thClass}>N° de la Plaque :</td>
-                <td className={tdClass}>{fiche.plaqueNo}</td>
+                <td className={thClass}>Localité :</td>
+                <td className={tdClass}>{fiche.localite || '—'}</td>
               </tr>
               <tr>
                 <td className={thClass}>Nom du Propriétaire :</td>
