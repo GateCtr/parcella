@@ -3,7 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
+import { DataSpinner } from '@/components/data-spinner';
 import { Printer, MapPin, Check, Eye } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -12,7 +12,7 @@ import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 export default function ImprimeriePage() {
-  const { data: plaques, isLoading } = useListPlaques();
+  const { data: plaques, isLoading, isFetching, isError } = useListPlaques();
   const markPrinted = useMarkPlaquePrinted();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -41,6 +41,7 @@ export default function ImprimeriePage() {
       </div>
 
       <div className="bg-card border rounded-xl shadow-sm overflow-hidden">
+        {isFetching && !isLoading && <DataSpinner compact label="Actualisation des plaques…" />}
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
@@ -55,16 +56,9 @@ export default function ImprimeriePage() {
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                Array.from({ length: 5 }).map((_, i) => (
-                  <TableRow key={i}>
-                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-40" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                    <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
-                    <TableCell className="text-right"><Skeleton className="h-8 w-24 ml-auto rounded-md" /></TableCell>
-                  </TableRow>
-                ))
+                <TableRow><TableCell colSpan={6}><DataSpinner label="Chargement des plaques…" /></TableCell></TableRow>
+              ) : isError ? (
+                <TableRow><TableCell colSpan={6} className="h-32 text-center text-destructive">Impossible de charger les plaques.</TableCell></TableRow>
               ) : plaques?.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} className="h-32 text-center text-muted-foreground">

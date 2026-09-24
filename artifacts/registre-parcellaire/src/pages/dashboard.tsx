@@ -2,7 +2,7 @@ import { useGetDashboard } from '@workspace/api-client-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { FileText, Clock, CheckCircle, Printer, Activity } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Skeleton } from '@/components/ui/skeleton';
+import { DataSpinner } from '@/components/data-spinner';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -10,34 +10,7 @@ export default function DashboardPage() {
   const { data: dashboard, isLoading, error } = useGetDashboard();
 
   if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[...Array(4)].map((_, i) => (
-            <Card key={i}>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <Skeleton className="h-4 w-1/2" />
-                <Skeleton className="h-4 w-4" />
-              </CardHeader>
-              <CardContent>
-                <Skeleton className="h-8 w-1/3 mb-1" />
-                <Skeleton className="h-3 w-1/4" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <Card className="col-span-2">
-            <CardHeader><Skeleton className="h-6 w-1/3" /></CardHeader>
-            <CardContent><Skeleton className="h-[300px] w-full" /></CardContent>
-          </Card>
-          <Card className="col-span-1">
-            <CardHeader><Skeleton className="h-6 w-1/2" /></CardHeader>
-            <CardContent><Skeleton className="h-[300px] w-full" /></CardContent>
-          </Card>
-        </div>
-      </div>
-    );
+    return <DataSpinner label="Chargement du tableau de bord…" />;
   }
 
   if (error || !dashboard) {

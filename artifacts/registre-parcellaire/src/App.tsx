@@ -1,4 +1,4 @@
-import { lazy, ReactNode } from 'react';
+import { lazy, ReactNode, Suspense } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
@@ -18,6 +18,7 @@ import { frFR } from '@clerk/localizations';
 import Home from '@/pages/home';
 import SignInPage from '@/pages/sign-in';
 import DashboardLayout from '@/components/layout/dashboard-layout';
+import { DataSpinner } from '@/components/data-spinner';
 
 const Dashboard = lazy(() => import('@/pages/dashboard'));
 const FichesList = lazy(() => import('@/pages/fiches/list'));
@@ -38,7 +39,9 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
     <>
       <Show when="signed-in">
         <DashboardLayout>
-          <Component />
+          <Suspense fallback={<DataSpinner />}>
+            <Component />
+          </Suspense>
         </DashboardLayout>
       </Show>
       <Show when="signed-out">

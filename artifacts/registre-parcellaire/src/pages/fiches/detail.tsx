@@ -4,7 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
+import { DataSpinner } from '@/components/data-spinner';
 import { MapPin, User, Phone, CheckCircle, XCircle, Printer, ArrowLeft, Home, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -21,7 +21,7 @@ export default function FicheDetail() {
   const decideFiche = useDecideFiche();
   const generatePlaque = useGeneratePlaque();
 
-  if (isLoading) return <DetailSkeleton />;
+  if (isLoading) return <DataSpinner label="Chargement de la fiche…" />;
   if (error || !fiche) return <div className="p-8 text-center text-destructive">Erreur: Impossible de charger la fiche.</div>;
 
   const handleDecision = (decision: 'validee' | 'rejetee') => {
@@ -233,28 +233,6 @@ export default function FicheDetail() {
             </dl>
           </CardContent>
         </Card>
-      </div>
-    </div>
-  );
-}
-
-function DetailSkeleton() {
-  return (
-    <div className="space-y-6 max-w-5xl mx-auto">
-      <div className="flex justify-between items-center">
-        <div>
-          <Skeleton className="h-8 w-64 mb-2" />
-          <Skeleton className="h-4 w-40" />
-        </div>
-        <Skeleton className="h-10 w-32" />
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Skeleton className="md:col-span-2 h-64 rounded-xl" />
-        <Skeleton className="h-64 rounded-xl" />
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Skeleton className="h-64 rounded-xl" />
-        <Skeleton className="h-64 rounded-xl" />
       </div>
     </div>
   );

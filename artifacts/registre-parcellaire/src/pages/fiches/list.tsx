@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Search, Plus, Eye, MapPin, Calendar } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
+import { DataSpinner } from '@/components/data-spinner';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
@@ -16,8 +16,8 @@ export default function FichesList() {
   const [commune, setCommune] = useState<string>('toutes');
   const [statut, setStatut] = useState<string>('tous');
 
-  const { data: communes, isLoading: loadingCommunes } = useListCommunes();
-  const { data: fiches, isLoading: loadingFiches } = useListFiches({
+  const { data: communes, isLoading: loadingCommunes, isError: communesError } = useListCommunes();
+  const { data: fiches, isLoading: loadingFiches, isFetching, isError } = useListFiches({
     recherche: recherche || undefined,
     commune: commune !== 'toutes' ? commune : undefined,
     statut: statut !== 'tous' ? statut : undefined,
@@ -56,14 +56,14 @@ export default function FichesList() {
           />
         </div>
         <div className="flex gap-4 w-full md:w-auto">
-          <Select value={commune} onValueChange={setCommune}>
+          <Select value={commune} onValueChange={setCommune} disabled={loadingCommunes || communesError}>
             <SelectTrigger className="w-full md:w-[180px]">
               <SelectValue placeholder="Commune" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="toutes">Toutes les communes</SelectItem>
               {communes?.map(c => (
-                <SelectItem key={c.code} value={c.nom}>{c.nom}</SelectItem>
+                <SelectItem key={c.nom} value={c.nom}>{c.nom}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -82,8 +82,11 @@ export default function FichesList() {
           </Select>
         </div>
       </div>
+      {loadingCommunes && <DataSpinner compact label="Chargement des communes…" />}
+      {communesError && <p role="alert" className="text-sm text-destructive">Impossible de charger les communes.</p>}
 
       <div className="bg-card border rounded-xl shadow-sm overflow-hidden">
+        {isFetching && !loadingFiches && <DataSpinner compact label="Actualisation des fiches…" />}
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
@@ -98,16 +101,9 @@ export default function FichesList() {
             </TableHeader>
             <TableBody>
               {loadingFiches ? (
-                Array.from({ length: 5 }).map((_, i) => (
-                  <TableRow key={i}>
-                    <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-40" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                    <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
-                    <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto rounded-md" /></TableCell>
-                  </TableRow>
-                ))
+                <TableRow><TableCell colSpan={6}><DataSpinner label="Chargement des fiches…" /></TableCell></TableRow>
+              ) : isError ? (
+                <TableRow><TableCell colSpan={6} className="h-32 text-center text-destructive">Impossible de charger les fiches.</TableCell></TableRow>
               ) : fiches?.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} className="h-32 text-center text-muted-foreground">

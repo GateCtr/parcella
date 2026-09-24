@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent } from '@/components/ui/card';
+import { DataSpinner } from '@/components/data-spinner';
 import { MapPin, User, Home, Sparkles, Trash2, LayoutTemplate, Waves, ClipboardCheck, CheckCircle2, ChevronRight, ChevronLeft } from 'lucide-react';
 import { FicheInput } from '@workspace/api-client-react';
 
@@ -59,7 +60,7 @@ export default function FicheNew() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   
-  const { data: communes } = useListCommunes();
+  const { data: communes, isLoading: loadingCommunes, isError: communesError } = useListCommunes();
   const createFiche = useCreateFiche();
 
   const form = useForm<FicheFormValues>({
@@ -188,16 +189,18 @@ export default function FicheNew() {
                   <FormField control={form.control} name="commune" render={({ field }) => (
                     <FormItem>
                       <FormLabel>Commune</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select onValueChange={field.onChange} defaultValue={field.value} disabled={loadingCommunes || communesError}>
                         <FormControl>
                           <SelectTrigger><SelectValue placeholder="Sélectionner..." /></SelectTrigger>
                         </FormControl>
                         <SelectContent>
                           {communes?.map(c => (
-                            <SelectItem key={c.code} value={c.nom}>{c.nom}</SelectItem>
+                            <SelectItem key={c.nom} value={c.nom}>{c.nom}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
+                      {loadingCommunes && <DataSpinner compact label="Chargement des communes…" />}
+                      {communesError && <p role="alert" className="text-sm text-destructive">Impossible de charger les communes.</p>}
                       <FormMessage />
                     </FormItem>
                   )} />
@@ -408,7 +411,7 @@ export default function FicheNew() {
                 </Button>
                 
                 {step < STEPS.length - 1 ? (
-                  <Button type="button" onClick={nextStep}>
+                  <Button type="button" onClick={nextStep} disabled={step === 0 && (loadingCommunes || communesError)}>
                     Suivant <ChevronRight className="ml-2 h-4 w-4" />
                   </Button>
                 ) : (
