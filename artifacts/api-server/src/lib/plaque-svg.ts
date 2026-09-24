@@ -32,12 +32,17 @@ export function plaqueSvg(f: FicheRow, plaqueNo: string, ficheUrl: string) {
   const numberFontSize = Math.min(230, Math.max(48, Math.floor(760 / (f.parcelleNo.length * 0.65))));
   const numberFit = numberFontSize * f.parcelleNo.length * 0.65 > 760 ? ' textLength="760" lengthAdjust="spacingAndGlyphs"' : "";
   const qr = QRCode.create(ficheUrl, { errorCorrectionLevel: "M" }).modules;
-  const cell = 128 / qr.size;
+  // Keep the QR centered below the city seal, inside the straight part of the border.
+  const qrX = 956;
+  const qrY = 570;
+  const qrSize = 128;
+  const quietZone = 18;
+  const cell = qrSize / qr.size;
   const modules: string[] = [];
   for (let row = 0; row < qr.size; row++) {
     for (let column = 0; column < qr.size; column++) {
       if (qr.get(row, column)) {
-        modules.push(`M${(982 + column * cell).toFixed(2)} ${(591 + row * cell).toFixed(2)}h${cell.toFixed(2)}v${cell.toFixed(2)}h-${cell.toFixed(2)}z`);
+        modules.push(`M${(qrX + column * cell).toFixed(2)} ${(qrY + row * cell).toFixed(2)}h${cell.toFixed(2)}v${cell.toFixed(2)}h-${cell.toFixed(2)}z`);
       }
     }
   }
@@ -55,12 +60,12 @@ export function plaqueSvg(f: FicheRow, plaqueNo: string, ficheUrl: string) {
   <path d="M0 604 909 0 H960 V47 L51 640 H0Z" fill="#ce1126"/>
   <polygon points="${star(175, 190, 134, 54)}" fill="#f7d116"/>
 </svg>
-<image x="943" y="102" width="154" height="154" href="${kinshasaSeal}" preserveAspectRatio="xMidYMid meet"/>
+ <image id="plaque-city-seal-v2" x="943" y="102" width="154" height="154" href="${kinshasaSeal}" preserveAspectRatio="xMidYMid meet"/>
 <text x="600" y="302" text-anchor="middle" fill="#193761" font-family="Arial Narrow,DejaVu Sans Condensed,Arial,sans-serif" font-weight="900" font-stretch="condensed" font-size="${numberFontSize}"${numberFit}>${xml(f.parcelleNo)}</text>
 ${textLine(`AV. ${address.toUpperCase()}`, 414)}
 ${textLine(`Q/ ${f.quartier.toUpperCase()}`, 533)}
 ${textLine(`C/ ${f.commune.toUpperCase()}`, 651)}
-<rect x="974" y="583" width="144" height="144" fill="#fff"/>
+ <rect x="${qrX - quietZone}" y="${qrY - quietZone}" width="${qrSize + quietZone * 2}" height="${qrSize + quietZone * 2}" fill="#fff"/>
 <path d="${modules.join("")}" fill="#111"/>
 </svg>`;
 }
