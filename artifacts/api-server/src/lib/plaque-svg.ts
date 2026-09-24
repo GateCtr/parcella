@@ -1,0 +1,66 @@
+import type { fichesTable } from "@workspace/db";
+import QRCode from "qrcode";
+import kinshasaSeal from "../assets/kinshasa-seal.png";
+
+type FicheRow = typeof fichesTable.$inferSelect;
+
+const xml = (value: string) =>
+  value.replace(/[&<>"']/g, (character) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&apos;",
+  })[character]!);
+
+function star(cx: number, cy: number, outer: number, inner: number) {
+  return Array.from({ length: 10 }, (_, i) => {
+    const angle = -Math.PI / 2 + i * Math.PI / 5;
+    const radius = i % 2 === 0 ? outer : inner;
+    return `${cx + radius * Math.cos(angle)},${cy + radius * Math.sin(angle)}`;
+  }).join(" ");
+}
+
+function textLine(label: string, y: number) {
+  const fontSize = Math.min(84, Math.max(34, Math.floor(780 / (label.length * 0.68))));
+  const fit = fontSize * label.length * 0.68 > 780 ? ' textLength="780" lengthAdjust="spacingAndGlyphs"' : "";
+  return `<text x="535" y="${y}" text-anchor="middle" fill="#193761" font-family="Arial Narrow,DejaVu Sans Condensed,Arial,sans-serif" font-weight="900" font-stretch="condensed" font-size="${fontSize}"${fit}>${xml(label)}</text>`;
+}
+
+export function plaqueSvg(f: FicheRow, plaqueNo: string, ficheUrl: string) {
+  const address = f.avenue.replace(/^(?:av(?:enue)?)[.\s]+/i, "").trim();
+  const numberFontSize = Math.min(230, Math.max(48, Math.floor(760 / (f.parcelleNo.length * 0.65))));
+  const numberFit = numberFontSize * f.parcelleNo.length * 0.65 > 760 ? ' textLength="760" lengthAdjust="spacingAndGlyphs"' : "";
+  const qr = QRCode.create(ficheUrl, { errorCorrectionLevel: "M" }).modules;
+  const cell = 128 / qr.size;
+  const modules: string[] = [];
+  for (let row = 0; row < qr.size; row++) {
+    for (let column = 0; column < qr.size; column++) {
+      if (qr.get(row, column)) {
+        modules.push(`M${(982 + column * cell).toFixed(2)} ${(591 + row * cell).toFixed(2)}h${cell.toFixed(2)}v${cell.toFixed(2)}h-${cell.toFixed(2)}z`);
+      }
+    }
+  }
+
+  const border = "M112 24 H1088 C1088 63 1114 83 1176 83 V717 C1114 717 1088 737 1088 776 H112 C112 737 86 717 24 717 V83 C86 83 112 63 112 24 Z";
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800" role="img" aria-label="Plaque parcellaire ${xml(plaqueNo)}">
+<title>Plaque parcellaire ${xml(plaqueNo)} — ${xml(f.commune)}</title>
+<defs><linearGradient id="national" x1="0" x2="1"><stop offset="0%" stop-color="#193761"/><stop offset="20%" stop-color="#168754"/><stop offset="43%" stop-color="#f7d116"/><stop offset="68%" stop-color="#ce1126"/><stop offset="88%" stop-color="#f7d116"/><stop offset="100%" stop-color="#193761"/></linearGradient></defs>
+<rect width="1200" height="800" fill="#fff"/>
+<path d="${border}" fill="none" stroke="url(#national)" stroke-width="13"/>
+<path d="${border}" fill="none" stroke="#193761" stroke-width="6"/>
+<svg x="95" y="110" width="190" height="125" viewBox="0 0 960 640" aria-label="Drapeau de la RDC">
+  <rect width="960" height="640" fill="#007fff"/>
+  <path d="M0 565 850 0 H960 V87 L110 640 H0Z" fill="#f7d116"/>
+  <path d="M0 604 909 0 H960 V47 L51 640 H0Z" fill="#ce1126"/>
+  <polygon points="${star(175, 190, 134, 54)}" fill="#f7d116"/>
+</svg>
+<image x="943" y="102" width="154" height="154" href="${kinshasaSeal}" preserveAspectRatio="xMidYMid meet"/>
+<text x="600" y="302" text-anchor="middle" fill="#193761" font-family="Arial Narrow,DejaVu Sans Condensed,Arial,sans-serif" font-weight="900" font-stretch="condensed" font-size="${numberFontSize}"${numberFit}>${xml(f.parcelleNo)}</text>
+${textLine(`AV. ${address.toUpperCase()}`, 414)}
+${textLine(`Q/ ${f.quartier.toUpperCase()}`, 533)}
+${textLine(`C/ ${f.commune.toUpperCase()}`, 651)}
+<rect x="974" y="583" width="144" height="144" fill="#fff"/>
+<path d="${modules.join("")}" fill="#111"/>
+</svg>`;
+}

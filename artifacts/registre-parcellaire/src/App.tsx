@@ -26,6 +26,8 @@ const FicheNew = lazy(() => import('@/pages/fiches/new'));
 const FicheDetail = lazy(() => import('@/pages/fiches/detail'));
 const FicheExample = lazy(() => import('@/pages/fiches/example'));
 const Imprimerie = lazy(() => import('@/pages/imprimerie'));
+const PlaqueModele = lazy(() => import('@/pages/plaques/modele'));
+const FichePlaque = lazy(() => import('@/pages/plaques/fiche-plaque'));
 
 const queryClient = new QueryClient();
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
@@ -85,6 +87,14 @@ function Router() {
 
         <Route path="/imprimerie">
           {() => <ProtectedRoute component={Imprimerie} />}
+        </Route>
+
+        <Route path="/plaques/modele">
+          {() => <Suspense fallback={<DataSpinner />}><PlaqueModele /></Suspense>}
+        </Route>
+
+        <Route path="/fiches/:id/plaque">
+          {() => <ProtectedRoute component={FichePlaque} />}
         </Route>
 
         <Route component={NotFound} />

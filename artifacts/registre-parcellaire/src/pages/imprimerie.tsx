@@ -1,23 +1,20 @@
 import { useListPlaques, useMarkPlaquePrinted, getListPlaquesQueryKey } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { DataSpinner } from '@/components/data-spinner';
 import { Printer, MapPin, Check, Eye } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
-import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Link } from 'wouter';
+import { cn } from '@/lib/utils';
 
 export default function ImprimeriePage() {
   const { data: plaques, isLoading, isFetching, isError } = useListPlaques();
   const markPrinted = useMarkPlaquePrinted();
   const queryClient = useQueryClient();
   const { toast } = useToast();
-
-  const [previewSvg, setPreviewSvg] = useState<string | null>(null);
 
   const handleMarkPrinted = (id: string) => {
     markPrinted.mutate({ id }, {
@@ -93,14 +90,13 @@ export default function ImprimeriePage() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => setPreviewSvg(plaque.svg)}
-                          title="Aperçu du SVG"
+                        <Link
+                          href={`/fiches/${plaque.ficheId}/plaque`}
+                          className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}
+                          title="Aperçu de la plaque"
                         >
                           <Eye className="h-4 w-4" />
-                        </Button>
+                        </Link>
                         {plaque.statut !== 'imprimee' && (
                           <Button 
                             variant="default" 
@@ -120,25 +116,6 @@ export default function ImprimeriePage() {
           </Table>
         </div>
       </div>
-
-      <Dialog open={!!previewSvg} onOpenChange={(open) => !open && setPreviewSvg(null)}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Aperçu de la plaque</DialogTitle>
-          </DialogHeader>
-          <div className="flex justify-center p-4 bg-muted/30 rounded-lg">
-            {previewSvg && (
-              <div 
-                className="w-full max-w-[300px] border shadow-sm bg-white" 
-                dangerouslySetInnerHTML={{ __html: previewSvg }} 
-              />
-            )}
-          </div>
-          <div className="flex justify-end">
-            <Button variant="outline" onClick={() => setPreviewSvg(null)}>Fermer</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

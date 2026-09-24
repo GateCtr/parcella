@@ -16,6 +16,7 @@ import {
   UpdateFicheParams,
 } from "@workspace/api-zod";
 import { decrypt, encrypt } from "../lib/crypto";
+import { plaqueSvg } from "../lib/plaque-svg";
 
 const router: IRouter = Router();
 const COMMUNES = ["Bandalungwa","Barumbu","Bumbu","Gombe","Kalamu","Kasa-Vubu","Kimbanseke","Kinshasa","Kintambo","Kisenso","Lemba","Limete","Lingwala","Makala","Maluku","Masina","Matete","Mont-Ngafula","N'Djili","N'Sele","Ngaba","Ngaliema","Ngiri-Ngiri","Selembao"];
@@ -31,10 +32,6 @@ function requireUser(req: any, res: any, next: any) {
 function publicFiche(row: typeof fichesTable.$inferSelect) {
   return { ...row, proprietaireNom: decrypt(row.proprietaireNom), telephone: decrypt(row.telephone), superficie: row.superficie, createdAt: row.createdAt.toISOString() };
 }
-function plaqueSvg(f: typeof fichesTable.$inferSelect, numero: string) {
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="1470" height="600" viewBox="0 0 1470 600"><rect width="1470" height="600" rx="28" fill="#07589f"/><rect x="18" y="18" width="1434" height="564" rx="20" fill="none" stroke="#d9af45" stroke-width="18"/><text x="735" y="120" text-anchor="middle" fill="#fff" font-family="Arial" font-size="42" font-weight="700">VILLE DE KINSHASA · ${f.commune.toUpperCase()}</text><text x="735" y="330" text-anchor="middle" fill="#fff" font-family="Arial" font-size="150" font-weight="800">${numero}</text><text x="735" y="430" text-anchor="middle" fill="#f7d878" font-family="Arial" font-size="42">${f.quartier} · ${f.avenue}</text><text x="735" y="515" text-anchor="middle" fill="#fff" font-family="Arial" font-size="26">${f.ficheNo}</text></svg>`;
-}
-
 router.get("/communes", (_req, res) => res.json(COMMUNES.map((nom) => ({ code: code(nom), nom }))));
 router.use(requireUser);
 
@@ -104,9 +101,14 @@ router.post("/fiches/:id/plaque", async (req,res):Promise<void>=>{
   if(!f){res.status(404).json({error:"Fiche introuvable"});return;}
   if(f.statutFiche!=="validee"){res.status(409).json({error:"La fiche doit être validée"});return;}
   const existing=await db.select().from(plaquesTable).where(eq(plaquesTable.ficheId,f.id)).orderBy(desc(plaquesTable.version));
-  if(existing.length&&f.statutPlaque==="generee"){res.status(409).json({error:"Plaque déjà générée"});return;}
+  if(existing.length&&f.statutPlaque==="generee"&&existing[0].svg.includes('id="national"')){res.status(409).json({error:"Plaque déjà générée"});return;}
   const version=(existing[0]?.version??0)+1; const plaqueNo=f.plaqueNo??`${code(f.commune)}-${f.parcelleNo}`;
-  const svg=plaqueSvg(f,plaqueNo); const [plaque]=await db.insert(plaquesTable).values({ficheId:f.id,version,svg}).returning();
+  const domain = process.env.REPLIT_DOMAINS?.split(",")[0]?.trim();
+  const host = domain || req.get("host");
+  if (!host) { res.status(503).json({error:"Domaine de la fiche indisponible"}); return; }
+  const origin = host.startsWith("localhost") ? `http://${host}` : `https://${host}`;
+  const ficheUrl = new URL(`/fiches/${encodeURIComponent(f.id)}`, origin).toString();
+  const svg=plaqueSvg(f,plaqueNo,ficheUrl); const [plaque]=await db.insert(plaquesTable).values({ficheId:f.id,version,svg}).returning();
   const statut=existing.length?"a_reimprimer":"generee"; await db.update(fichesTable).set({plaqueNo,statutPlaque:statut}).where(eq(fichesTable.id,f.id));
   res.status(201).json({id:plaque.id,ficheId:f.id,ficheNo:f.ficheNo,commune:f.commune,quartier:f.quartier,avenue:f.avenue,plaqueNo,version,statut,svg,genereLe:plaque.genereLe.toISOString(),imprimeLe:null});
 });

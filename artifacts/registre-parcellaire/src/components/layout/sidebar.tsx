@@ -1,11 +1,12 @@
 import { Link, useLocation } from 'wouter';
 import { cn } from '@/lib/utils';
-import { FileText, LayoutDashboard, Printer, Map } from 'lucide-react';
+import { FileText, LayoutDashboard, Printer, Map, LayoutTemplate } from 'lucide-react';
 
 const navItems = [
   { href: '/dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
   { href: '/fiches', label: 'Registre des fiches', icon: FileText },
   { href: '/imprimerie', label: 'File d\'impression', icon: Printer },
+  { href: '/plaques/modele', label: 'Modèle de plaque', icon: LayoutTemplate },
 ];
 
 export function SidebarNav({ className, onItemClick }: { className?: string, onItemClick?: () => void }) {

@@ -198,4 +198,35 @@
     size: A4;
     margin: 10mm;
   }
+
+  .print-unscale {
+    transform: none !important;
+    margin: 0 !important;
+  }
+
+  .plaque-page-shell {
+    max-width: none !important;
+    width: 277mm !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  .plaque-page-shell .print-center-wrapper {
+    margin-top: 0 !important;
+  }
+  .print-center-wrapper, .print-center-wrapper * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .print-center-wrapper {
+    position: static;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: white;
+    width: 277mm;
+    min-height: 175mm;
+    height: auto;
+    margin: 0 auto;
+  }
 }

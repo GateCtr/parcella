@@ -1,1 +1,2 @@
 - [Portée de la fiche parcellaire](fiche-parcellaire-portee.md) — Le modèle fourni vise Mont-Ngafula, mais l’application doit garder les 24 communes sans attribuer son adresse aux autres.
+- [Plaque et impression](plaque-impression.md) — Ne pas inventer la localité du modèle ; une page nommée CSS ajoutait une page blanche à l’impression Chromium.

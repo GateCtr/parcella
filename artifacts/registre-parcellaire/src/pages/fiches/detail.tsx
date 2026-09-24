@@ -4,7 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { DataSpinner } from '@/components/data-spinner';
-import { Printer, ArrowLeft, CheckCircle, XCircle } from 'lucide-react';
+import { Printer, ArrowLeft, CheckCircle, XCircle, Image as ImageIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -150,6 +150,15 @@ export default function FicheDetail({ exampleFiche }: { exampleFiche?: Fiche }) 
             >
               <Printer className="mr-2 h-4 w-4" /> Générer Plaque
             </Button>
+          )}
+
+          {!isExample && (
+            <Link
+              href={`/fiches/${fiche.id}/plaque`}
+              className={buttonVariants({ variant: 'secondary' })}
+            >
+              <ImageIcon className="mr-2 h-4 w-4" /> Plaque
+            </Link>
           )}
 
           <Button variant="outline" onClick={() => window.print()}>
