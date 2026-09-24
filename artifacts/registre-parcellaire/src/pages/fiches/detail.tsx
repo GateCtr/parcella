@@ -79,6 +79,7 @@ export default function FicheDetail() {
             <ArrowLeft className="h-5 w-5" />
           </Link>
           <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Fiche enregistrée · Affichage et impression</p>
             <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
               Fiche N° {fiche.ficheNo}
               {fiche.statutFiche === 'validee' && <CheckCircle className="h-6 w-6 text-green-600" />}

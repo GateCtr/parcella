@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { useForm, type FieldErrors } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useLocation } from 'wouter';
+import { Link, useLocation } from 'wouter';
 import { useCreateFiche, useListCommunes, checkFicheDuplicate, FicheInput } from '@workspace/api-client-react';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Textarea } from '@/components/ui/textarea';
@@ -12,8 +12,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent } from '@/components/ui/card';
 import { DataSpinner } from '@/components/data-spinner';
-import { MapPin, Info, Sparkles, Trash2, LayoutTemplate, Waves, Briefcase, FileText, ClipboardCheck, ChevronRight, ChevronLeft, CheckCircle2, Loader2 } from 'lucide-react';
-import { format } from 'date-fns';
+import { MapPin, Info, Sparkles, Trash2, LayoutTemplate, Waves, Briefcase, FileText, ClipboardCheck, ChevronRight, ChevronLeft, CheckCircle2, Loader2, ArrowLeft } from 'lucide-react';
 import { 
   typeOccupationOptions, usageParcelleOptions, plaqueExistanteOptions, paiementOptions,
   sensibilisationOptions, hygieneOptions, modeEliminationOptions, bacOrduresOptions, 
@@ -286,35 +285,18 @@ export default function FicheNew() {
   const StepIcon = STEPS[step].icon;
   const communeOptions = communes?.map(c => ({ label: c.nom, value: c.nom })) || [];
 
-  const communeVal = form.watch('commune');
-  const dateProspectionVal = form.watch('dateProspection');
-  const d = dateProspectionVal ? new Date(dateProspectionVal) : new Date();
-  const quarter = Math.floor(d.getMonth() / 3) + 1;
-  const year = d.getFullYear();
-
   return (
     <div className="max-w-3xl mx-auto space-y-6 pb-20">
-      
-      {/* HEADER OFFICIEL */}
-      <div className="flex flex-col items-center justify-center text-center font-serif mb-6 bg-white p-6 border rounded-xl shadow-sm text-black">
-        <p className="font-bold text-sm tracking-wide">RÉPUBLIQUE DÉMOCRATIQUE DU CONGO</p>
-        <p className="font-bold text-sm tracking-wide">VILLE PROVINCE DE KINSHASA</p>
-        <p className="font-bold text-sm tracking-wide uppercase">COMMUNE DE {communeVal || '________________'}</p>
-        
-        <h1 className="text-xl md:text-2xl font-bold mt-4 mb-2 border-y-4 border-double border-black py-3 w-full max-w-2xl">
-          FICHE DE PROSPECTION PARCELLAIRE
-        </h1>
-        
-        <div className="flex justify-between items-end w-full mt-6 text-left">
-          <div className="space-y-1">
-            <p className="text-lg">N° Fiche: <strong className="text-xl font-mono">[Attribué après enregistrement]</strong></p>
-            <p>Date: <strong>{dateProspectionVal ? format(new Date(dateProspectionVal), "dd/MM/yyyy") : '____/____/______'}</strong></p>
-            <p>Trimestre: <strong>T{quarter} / {year}</strong></p>
-          </div>
-          <div className="w-24 h-24 border-2 border-dashed border-gray-400 flex flex-col items-center justify-center text-gray-400 text-xs text-center p-2 bg-gray-50/50">
-            Espace réservé<br/>Code QR
-          </div>
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Nouvelle prospection</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Remplissez le formulaire ci-dessous. La fiche complète s’affichera sur une autre page après l’enregistrement.
+          </p>
         </div>
+        <Link href="/fiches" className={`${buttonVariants({ variant: 'outline' })} shrink-0`}>
+          <ArrowLeft className="mr-2 h-4 w-4" /> Registre des fiches
+        </Link>
       </div>
 
       <div className="flex gap-1 overflow-x-auto pb-2 scrollbar-hide">
