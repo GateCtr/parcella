@@ -338,15 +338,15 @@ export default function FicheNew() {
   if (settingsError || !settings) return <p role="alert" className="text-destructive">Impossible de charger les paramètres des rubriques. Réessayez avant de créer une fiche.</p>;
 
   return (
-    <div ref={pageRef} className="mx-auto max-w-3xl space-y-6 pb-12">
+    <div ref={pageRef} className="mx-auto w-full min-w-0 max-w-3xl space-y-6 pb-12">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
+        <div className="min-w-0">
           <h1 className="text-2xl font-bold tracking-tight">Nouvelle prospection</h1>
           <p className="text-sm text-muted-foreground mt-1">
             Remplissez le formulaire ci-dessous. La fiche complète s’affichera sur une autre page après l’enregistrement.
           </p>
         </div>
-        <div className="flex flex-wrap gap-2 shrink-0">
+        <div className="flex min-w-0 flex-wrap gap-2 sm:shrink-0">
           <Link href="/fiches/exemple" target="_blank" rel="noopener noreferrer" className={buttonVariants({ variant: 'outline' })}>
             Voir un exemple
           </Link>
@@ -367,13 +367,13 @@ export default function FicheNew() {
         ))}
       </div>
 
-      <Card className="border-t-4 shadow-md" style={{ borderTopColor: 'hsl(var(--primary))' }}>
+      <Card className="min-w-0 border-t-4 shadow-md" style={{ borderTopColor: 'hsl(var(--primary))' }}>
         <CardContent className="p-4 sm:p-6 md:p-8">
           <div className="mb-6 flex items-center gap-3 border-b pb-4">
-            <div className="bg-primary/10 text-primary p-2 rounded-lg">
+            <div className="shrink-0 rounded-lg bg-primary/10 p-2 text-primary">
               <StepIcon className="h-6 w-6" />
             </div>
-            <h3 className="text-xl font-bold uppercase tracking-tight">{step + 1}. {STEPS[step].title}</h3>
+            <h3 className="min-w-0 break-words text-lg font-bold uppercase tracking-tight sm:text-xl">{step + 1}. {STEPS[step].title}</h3>
           </div>
 
           <Form {...form}>
@@ -603,7 +603,7 @@ export default function FicheNew() {
                 </div>
               </div>
 
-              <div className="mt-8 flex justify-between gap-2 border-t border-border/60 pt-6">
+              <div className="mt-8 flex flex-wrap items-center justify-between gap-2 border-t border-border/60 pt-6">
                 <Button 
                   type="button" 
                   variant="outline" 

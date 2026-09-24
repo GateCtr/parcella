@@ -33,7 +33,7 @@ export function SidebarNav({ className, onItemClick }: { className?: string, onI
                 : 'text-sidebar-foreground/70'
             )}
           >
-            <item.icon className="h-4 w-4" />
+            <item.icon className="h-4 w-4 shrink-0" />
             {item.label}
           </Link>
         );
@@ -44,7 +44,7 @@ export function SidebarNav({ className, onItemClick }: { className?: string, onI
 
 export default function Sidebar() {
   return (
-    <aside className="hidden w-64 flex-col border-r bg-sidebar md:flex">
+    <aside className="hidden h-full min-h-0 w-64 shrink-0 flex-col overflow-hidden border-r bg-sidebar md:flex">
       <Link href="/">
         <div className="flex h-14 items-center border-b border-sidebar-border px-4 lg:h-16 gap-3 cursor-pointer">
           <div className="flex h-8 w-8 items-center justify-center rounded bg-primary text-primary-foreground">
@@ -53,10 +53,10 @@ export default function Sidebar() {
           <span className="font-semibold text-sidebar-foreground uppercase tracking-wider text-sm">Registre Parcellaire</span>
         </div>
       </Link>
-      <div className="flex-1 overflow-auto">
+      <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto">
         <SidebarNav />
       </div>
-      <div className="p-4 border-t border-sidebar-border mt-auto">
+      <div className="mt-auto shrink-0 border-t border-sidebar-border p-4">
         <div className="text-xs text-sidebar-foreground/50">
           Ville de Kinshasa
           <br />

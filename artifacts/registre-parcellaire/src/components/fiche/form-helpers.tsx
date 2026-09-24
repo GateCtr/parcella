@@ -30,12 +30,12 @@ export function CustomRadioGroup({ form, name, label, options, layout = "wrap" }
       <FormItem className="space-y-3">
         <FormLabel className="text-base font-semibold">{label}</FormLabel>
         <FormControl>
-          <div className={cn("flex gap-2", layout === "wrap" ? "flex-wrap" : "flex-col")}>
+          <div className={cn("flex min-w-0 gap-2", layout === "wrap" ? "flex-wrap" : "flex-col")}>
             {options.map((opt: any) => (
               <label 
                 key={opt.value} 
                 className={cn(
-                  "flex items-center justify-center min-h-[48px] gap-2 px-4 py-2 border-2 rounded-md cursor-pointer transition-colors text-sm font-medium",
+                  "flex min-w-0 max-w-full items-center justify-center break-words min-h-[48px] gap-2 px-4 py-2 border-2 rounded-md cursor-pointer transition-colors text-sm font-medium",
                   field.value === opt.value 
                     ? 'bg-primary/10 border-primary text-primary shadow-sm' 
                     : 'bg-background hover:bg-muted text-foreground border-input'
@@ -74,7 +74,7 @@ export function CustomMultiSelect({ form, name, label, options }: any) {
                   <label 
                     key={opt.value} 
                     className={cn(
-                      "flex items-center gap-3 px-3 py-3 border-2 rounded-md cursor-pointer transition-colors min-h-[48px]",
+                      "flex min-w-0 items-center gap-3 px-3 py-3 border-2 rounded-md cursor-pointer transition-colors min-h-[48px]",
                       isChecked 
                         ? 'bg-primary/10 border-primary shadow-sm' 
                         : 'bg-background hover:bg-muted border-input'
@@ -92,7 +92,7 @@ export function CustomMultiSelect({ form, name, label, options }: any) {
                       }} 
                     />
                     <span className={cn(
-                      "text-sm leading-tight flex-1",
+                      "min-w-0 break-words text-sm leading-tight flex-1",
                       isChecked ? 'font-semibold text-foreground' : 'text-muted-foreground font-medium'
                     )}>{opt.label}</span>
                   </label>

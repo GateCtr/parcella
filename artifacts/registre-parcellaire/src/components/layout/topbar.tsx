@@ -22,7 +22,7 @@ export default function Topbar() {
   };
 
   return (
-    <header className="flex h-14 lg:h-16 items-center gap-4 border-b bg-card px-4 md:px-6 z-10 sticky top-0">
+    <header className="z-10 flex h-14 shrink-0 items-center gap-4 border-b bg-card px-4 md:px-6 lg:h-16">
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetTrigger asChild>
           <Button variant="outline" size="icon" className="shrink-0 md:hidden">
@@ -43,7 +43,7 @@ export default function Topbar() {
         </SheetContent>
       </Sheet>
       
-      <div className="flex-1">
+      <div className="min-w-0 flex-1">
         <h1 className="text-lg font-semibold text-card-foreground">
           {getPageTitle()}
         </h1>

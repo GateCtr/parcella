@@ -147,6 +147,7 @@
   #root, .dashboard-shell, .dashboard-content, .dashboard-shell main {
     margin: 0 !important;
     padding: 0 !important;
+    position: static !important;
     width: 100% !important;
     max-width: 100% !important;
     overflow: visible !important;
