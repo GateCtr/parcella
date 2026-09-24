@@ -40,9 +40,14 @@ export default function FichesList() {
           <h2 className="text-2xl font-bold tracking-tight">Registre des fiches</h2>
           <p className="text-muted-foreground text-sm">Gérez et consultez toutes les fiches de recensement.</p>
         </div>
-        <Link href="/fiches/nouvelle" className={buttonVariants({ variant: 'default' })}>
-          <Plus className="mr-2 h-4 w-4" /> Nouvelle Fiche
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link href="/fiches/exemple" className={buttonVariants({ variant: 'outline' })}>
+            Voir un exemple
+          </Link>
+          <Link href="/fiches/nouvelle" className={buttonVariants({ variant: 'default' })}>
+            <Plus className="mr-2 h-4 w-4" /> Nouvelle Fiche
+          </Link>
+        </div>
       </div>
 
       <div className="bg-card p-4 rounded-xl border shadow-sm flex flex-col md:flex-row gap-4">

@@ -294,9 +294,14 @@ export default function FicheNew() {
             Remplissez le formulaire ci-dessous. La fiche complète s’affichera sur une autre page après l’enregistrement.
           </p>
         </div>
-        <Link href="/fiches" className={`${buttonVariants({ variant: 'outline' })} shrink-0`}>
-          <ArrowLeft className="mr-2 h-4 w-4" /> Registre des fiches
-        </Link>
+        <div className="flex flex-wrap gap-2 shrink-0">
+          <Link href="/fiches/exemple" target="_blank" rel="noopener noreferrer" className={buttonVariants({ variant: 'outline' })}>
+            Voir un exemple
+          </Link>
+          <Link href="/fiches" className={buttonVariants({ variant: 'outline' })}>
+            <ArrowLeft className="mr-2 h-4 w-4" /> Registre des fiches
+          </Link>
+        </div>
       </div>
 
       <div className="flex gap-1 overflow-x-auto pb-2 scrollbar-hide">

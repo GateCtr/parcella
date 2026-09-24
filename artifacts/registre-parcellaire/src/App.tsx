@@ -24,6 +24,7 @@ const Dashboard = lazy(() => import('@/pages/dashboard'));
 const FichesList = lazy(() => import('@/pages/fiches/list'));
 const FicheNew = lazy(() => import('@/pages/fiches/new'));
 const FicheDetail = lazy(() => import('@/pages/fiches/detail'));
+const FicheExample = lazy(() => import('@/pages/fiches/example'));
 const Imprimerie = lazy(() => import('@/pages/imprimerie'));
 
 const queryClient = new QueryClient();
@@ -72,6 +73,10 @@ function Router() {
 
         <Route path="/fiches/nouvelle">
           {() => <ProtectedRoute component={FicheNew} />}
+        </Route>
+
+        <Route path="/fiches/exemple">
+          {() => <Suspense fallback={<DataSpinner />}><FicheExample /></Suspense>}
         </Route>
 
         <Route path="/fiches/:id">

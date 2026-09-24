@@ -1,5 +1,5 @@
 import { useParams, Link } from 'wouter';
-import { useGetFiche, useDecideFiche, useGeneratePlaque, getGetFicheQueryKey } from '@workspace/api-client-react';
+import { useGetFiche, useDecideFiche, useGeneratePlaque, getGetFicheQueryKey, type Fiche } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -24,20 +24,25 @@ const DetailRow = ({ label, value }: { label: string, value: React.ReactNode }) 
   </div>
 );
 
-export default function FicheDetail() {
+export default function FicheDetail({ exampleFiche }: { exampleFiche?: Fiche }) {
   const { id } = useParams();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const isExample = Boolean(exampleFiche);
 
-  const { data: fiche, isLoading, error } = useGetFiche(id!);
+  const { data: savedFiche, isLoading, error } = useGetFiche(id ?? '', {
+    query: { queryKey: getGetFicheQueryKey(id ?? ''), enabled: !isExample && Boolean(id) },
+  });
+  const fiche = exampleFiche ?? savedFiche;
   
   const decideFiche = useDecideFiche();
   const generatePlaque = useGeneratePlaque();
 
-  if (isLoading) return <DataSpinner label="Chargement de la fiche…" />;
-  if (error || !fiche) return <div className="p-8 text-center text-destructive font-semibold">Erreur: Impossible de charger la fiche.</div>;
+  if (!isExample && isLoading) return <DataSpinner label="Chargement de la fiche…" />;
+  if ((!isExample && error) || !fiche) return <div className="p-8 text-center text-destructive font-semibold">Erreur: Impossible de charger la fiche.</div>;
 
   const handleDecision = (decision: 'validee' | 'rejetee') => {
+    if (isExample) return;
     decideFiche.mutate({ id: fiche.id, data: { decision } }, {
       onSuccess: (updatedFiche) => {
         queryClient.setQueryData(getGetFicheQueryKey(fiche.id), updatedFiche);
@@ -50,6 +55,7 @@ export default function FicheDetail() {
   };
 
   const handleGeneratePlaque = () => {
+    if (isExample) return;
     generatePlaque.mutate({ id: fiche.id }, {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getGetFicheQueryKey(fiche.id) });
@@ -75,24 +81,26 @@ export default function FicheDetail() {
     <div className="space-y-6 max-w-4xl mx-auto pb-20 print:pb-0">
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between no-print border-b pb-4">
         <div className="flex items-center gap-3">
-          <Link href="/fiches" className={cn(buttonVariants({ variant: 'outline', size: 'icon' }), "h-10 w-10 shrink-0")}>
+          <Link href={isExample ? '/' : '/fiches'} aria-label={isExample ? "Retour à l'accueil" : "Retour au registre"} className={cn(buttonVariants({ variant: 'outline', size: 'icon' }), "h-10 w-10 shrink-0")}>
             <ArrowLeft className="h-5 w-5" />
           </Link>
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Fiche enregistrée · Affichage et impression</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              {isExample ? 'Démonstration · Aucune donnée enregistrée' : 'Fiche enregistrée · Affichage et impression'}
+            </p>
             <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-              Fiche N° {fiche.ficheNo}
-              {fiche.statutFiche === 'validee' && <CheckCircle className="h-6 w-6 text-green-600" />}
-              {fiche.statutFiche === 'rejetee' && <XCircle className="h-6 w-6 text-destructive" />}
+              {isExample ? 'Exemple de fiche' : `Fiche N° ${fiche.ficheNo}`}
+              {!isExample && fiche.statutFiche === 'validee' && <CheckCircle className="h-6 w-6 text-green-600" />}
+              {!isExample && fiche.statutFiche === 'rejetee' && <XCircle className="h-6 w-6 text-destructive" />}
             </h2>
             <p className="text-muted-foreground text-sm">
-              Soumise le {format(new Date(fiche.createdAt), "dd MMMM yyyy 'à' HH:mm", { locale: fr })}
+              {isExample ? 'Les informations ci-dessous sont fictives et servent uniquement à illustrer la fiche.' : `Soumise le ${format(new Date(fiche.createdAt), "dd MMMM yyyy 'à' HH:mm", { locale: fr })}`}
             </p>
           </div>
         </div>
         
         <div className="flex flex-wrap items-center gap-2">
-          {fiche.statutFiche === 'soumise' && (
+          {!isExample && fiche.statutFiche === 'soumise' && (
             <>
               <Button 
                 variant="destructive" 
@@ -111,7 +119,7 @@ export default function FicheDetail() {
             </>
           )}
 
-          {fiche.statutFiche === 'validee' && fiche.statutPlaque === 'non_generee' && (
+          {!isExample && fiche.statutFiche === 'validee' && fiche.statutPlaque === 'non_generee' && (
             <Button 
               onClick={handleGeneratePlaque}
               disabled={generatePlaque.isPending}
@@ -125,12 +133,12 @@ export default function FicheDetail() {
             <Printer className="mr-2 h-4 w-4" /> Imprimer
           </Button>
 
-          {fiche.statutPlaque === 'generee' && (
+          {!isExample && fiche.statutPlaque === 'generee' && (
              <Badge variant="secondary" className="bg-primary/20 text-primary py-1.5 px-3">
                En file d'attente
              </Badge>
           )}
-          {fiche.statutPlaque === 'imprimee' && (
+          {!isExample && fiche.statutPlaque === 'imprimee' && (
              <Badge variant="secondary" className="bg-green-600/20 text-green-700 py-1.5 px-3">
                <CheckCircle className="mr-1 h-3 w-3" /> Imprimée
              </Badge>
@@ -140,6 +148,11 @@ export default function FicheDetail() {
 
       {/* PAPER FORM DESIGN */}
       <div className="bg-white text-black p-6 md:p-12 border rounded-xl shadow-sm print:shadow-none print:border-none print:p-0 font-sans mx-auto max-w-4xl print-container">
+        {isExample && (
+          <div className="mb-6 border-2 border-dashed border-amber-700 bg-amber-50 px-4 py-3 text-center text-sm font-bold uppercase tracking-wide text-amber-900">
+            Exemple fictif — ne constitue pas une fiche officielle
+          </div>
+        )}
         
         {/* Header Section */}
         <div className="flex flex-col items-center justify-center text-center font-serif mb-6">

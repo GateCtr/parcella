@@ -45,6 +45,9 @@ export default function Home() {
                 Connexion Agent
               </Link>
             </Show>
+            <Link href="/fiches/exemple" className={cn(buttonVariants({ variant: 'outline', size: 'lg' }), "h-12 px-8 text-base")}>
+              Voir une fiche d’exemple
+            </Link>
           </div>
         </section>
 
