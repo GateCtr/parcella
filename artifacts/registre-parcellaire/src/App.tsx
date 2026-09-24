@@ -90,7 +90,11 @@ function Router() {
         </Route>
 
         <Route path="/plaques/modele">
-          {() => <Suspense fallback={<DataSpinner />}><PlaqueModele /></Suspense>}
+          {() => (
+            <DashboardLayout>
+              <Suspense fallback={<DataSpinner />}><PlaqueModele /></Suspense>
+            </DashboardLayout>
+          )}
         </Route>
 
         <Route path="/fiches/:id/plaque">
