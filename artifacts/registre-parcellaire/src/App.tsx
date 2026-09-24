@@ -1,4 +1,4 @@
-import { type ReactNode } from 'react';
+import { lazy, ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
@@ -9,32 +9,75 @@ import {
   Switch,
   useLocation,
   Router as WouterRouter,
+  Redirect,
 } from 'wouter';
+import { ClerkProvider, Show } from '@clerk/react';
+import { publishableKeyFromHost } from '@clerk/react/internal';
+import { frFR } from '@clerk/localizations';
+
+import Home from '@/pages/home';
+import SignInPage from '@/pages/sign-in';
+import SignUpPage from '@/pages/sign-up';
+import DashboardLayout from '@/components/layout/dashboard-layout';
+
+const Dashboard = lazy(() => import('@/pages/dashboard'));
+const FichesList = lazy(() => import('@/pages/fiches/list'));
+const FicheNew = lazy(() => import('@/pages/fiches/new'));
+const FicheDetail = lazy(() => import('@/pages/fiches/detail'));
+const Imprimerie = lazy(() => import('@/pages/imprimerie'));
 
 const queryClient = new QueryClient();
+const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
+const clerkPubKey = publishableKeyFromHost(
+  window.location.hostname,
+  import.meta.env.VITE_CLERK_PUBLISHABLE_KEY,
+);
+const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
 
-function Home() {
+function ProtectedRoute({ component: Component }: { component: React.ComponentType<any> }) {
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gray-50">
-      <div className="text-center">
-        <h1 className="text-2xl font-bold text-gray-900">
-          Replit Agent is building...
-        </h1>
-        <p className="mt-2 text-sm text-gray-600">
-          Your app will appear here once it's ready.
-        </p>
-      </div>
-    </div>
+    <>
+      <Show when="signed-in">
+        <DashboardLayout>
+          <Component />
+        </DashboardLayout>
+      </Show>
+      <Show when="signed-out">
+        <Redirect to="/sign-in" />
+      </Show>
+    </>
   );
 }
 
 function Router() {
   return (
-    // Keep a shared shell (sidebar, navbar) outside the boundary so it
-    // survives a page crash.
     <RoutedErrorBoundary>
       <Switch>
         <Route path="/" component={Home} />
+        
+        <Route path="/sign-in/*?" component={SignInPage} />
+        <Route path="/sign-up/*?" component={SignUpPage} />
+
+        <Route path="/dashboard">
+          {() => <ProtectedRoute component={Dashboard} />}
+        </Route>
+        
+        <Route path="/fiches">
+          {() => <ProtectedRoute component={FichesList} />}
+        </Route>
+
+        <Route path="/fiches/nouvelle">
+          {() => <ProtectedRoute component={FicheNew} />}
+        </Route>
+
+        <Route path="/fiches/:id">
+          {() => <ProtectedRoute component={FicheDetail} />}
+        </Route>
+
+        <Route path="/imprimerie">
+          {() => <ProtectedRoute component={Imprimerie} />}
+        </Route>
+
         <Route component={NotFound} />
       </Switch>
     </RoutedErrorBoundary>
@@ -49,12 +92,22 @@ function RoutedErrorBoundary({ children }: { children: ReactNode }) {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
-          <Router />
-        </WouterRouter>
-        <Toaster />
-      </TooltipProvider>
+      <ClerkProvider
+        publishableKey={clerkPubKey}
+        localization={frFR}
+        signInUrl={`${basePath}/sign-in`}
+        signUpUrl={`${basePath}/sign-up`}
+        signInFallbackRedirectUrl="/dashboard"
+        signUpFallbackRedirectUrl="/dashboard"
+        proxyUrl={clerkProxyUrl}
+      >
+        <TooltipProvider>
+          <WouterRouter base={basePath}>
+            <Router />
+          </WouterRouter>
+          <Toaster />
+        </TooltipProvider>
+      </ClerkProvider>
     </QueryClientProvider>
   );
 }

@@ -5,7 +5,6 @@
  * API du registre parcellaire de Kinshasa
  * OpenAPI spec version: 0.1.0
  */
+import type { FicheInput } from './ficheInput';
 
-export interface HealthStatus {
-  status: string;
-}
+export type FicheUpdate = FicheInput;

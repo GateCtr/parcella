@@ -1,22 +1,22 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: API du registre parcellaire de Kinshasa
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
-    description: Health operations
+  - name: communes
+  - name: fiches
+  - name: dashboard
+  - name: plaques
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
-      summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,13 +24,349 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /communes:
+    get:
+      operationId: listCommunes
+      tags: [communes]
+      responses:
+        "200":
+          description: Les 24 communes de Kinshasa
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Commune"
+  /dashboard:
+    get:
+      operationId: getDashboard
+      tags: [dashboard]
+      parameters:
+        - in: query
+          name: commune
+          schema: { type: string }
+      responses:
+        "200":
+          description: Statistiques du registre
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Dashboard"
+  /fiches:
+    get:
+      operationId: listFiches
+      tags: [fiches]
+      parameters:
+        - in: query
+          name: commune
+          schema: { type: string }
+        - in: query
+          name: statut
+          schema: { type: string }
+        - in: query
+          name: recherche
+          schema: { type: string }
+      responses:
+        "200":
+          description: Liste filtrée des fiches
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Fiche"
+    post:
+      operationId: createFiche
+      tags: [fiches]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FicheInput"
+      responses:
+        "201":
+          description: Fiche créée
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Fiche"
+        "409":
+          description: Doublon détecté
+  /fiches/check-duplicate:
+    get:
+      operationId: checkFicheDuplicate
+      tags: [fiches]
+      parameters:
+        - in: query
+          name: commune
+          required: true
+          schema: { type: string }
+        - in: query
+          name: quartier
+          required: true
+          schema: { type: string }
+        - in: query
+          name: avenue
+          required: true
+          schema: { type: string }
+        - in: query
+          name: parcelleNo
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Résultat du contrôle
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DuplicateCheck"
+  /fiches/{id}:
+    get:
+      operationId: getFiche
+      tags: [fiches]
+      parameters:
+        - $ref: "#/components/parameters/FicheId"
+      responses:
+        "200":
+          description: Détail de la fiche
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Fiche"
+        "404":
+          description: Introuvable
+    patch:
+      operationId: updateFiche
+      tags: [fiches]
+      parameters:
+        - $ref: "#/components/parameters/FicheId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FicheUpdate"
+      responses:
+        "200":
+          description: Fiche mise à jour
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Fiche"
+  /fiches/{id}/decision:
+    post:
+      operationId: decideFiche
+      tags: [fiches]
+      parameters:
+        - $ref: "#/components/parameters/FicheId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FicheDecision"
+      responses:
+        "200":
+          description: Décision enregistrée
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Fiche"
+  /fiches/{id}/plaque:
+    post:
+      operationId: generatePlaque
+      tags: [plaques]
+      parameters:
+        - $ref: "#/components/parameters/FicheId"
+      responses:
+        "201":
+          description: Plaque générée
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Plaque"
+        "409":
+          description: Fiche non validée ou plaque déjà générée
+  /plaques:
+    get:
+      operationId: listPlaques
+      tags: [plaques]
+      parameters:
+        - in: query
+          name: commune
+          schema: { type: string }
+        - in: query
+          name: statut
+          schema: { type: string }
+      responses:
+        "200":
+          description: File d'impression
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Plaque"
+  /plaques/{id}/imprimer:
+    post:
+      operationId: markPlaquePrinted
+      tags: [plaques]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Plaque marquée imprimée
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Plaque"
 components:
+  parameters:
+    FicheId:
+      in: path
+      name: id
+      required: true
+      schema: { type: string, format: uuid }
   schemas:
     HealthStatus:
       type: object
+      required: [status]
       properties:
-        status:
-          type: string
-      required:
-        - status
-
+        status: { type: string }
+    Commune:
+      type: object
+      required: [code, nom]
+      properties:
+        code: { type: string }
+        nom: { type: string }
+    Fiche:
+      type: object
+      required: [id, ficheNo, commune, quartier, avenue, parcelleNo, proprietaireNom, telephone, typeOccupation, usageParcelle, statutFiche, statutPlaque, dateProspection, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        ficheNo: { type: string }
+        commune: { type: string }
+        quartier: { type: string }
+        avenue: { type: string }
+        parcelleNo: { type: string }
+        plaqueNo: { type: ["string", "null"] }
+        proprietaireNom: { type: string }
+        telephone: { type: string }
+        typeOccupation: { type: string }
+        superficie: { type: ["number", "null"] }
+        usageParcelle: { type: string }
+        plaqueExistante: { type: ["string", "null"] }
+        statutPaiement: { type: ["string", "null"] }
+        recuNo: { type: ["string", "null"] }
+        sensibilisation: { type: ["string", "null"] }
+        hygiene: { type: object, additionalProperties: true }
+        dechets: { type: object, additionalProperties: true }
+        facade: { type: object, additionalProperties: true }
+        drainage: { type: object, additionalProperties: true }
+        activites:
+          type: array
+          items: { type: string }
+        remarques: { type: ["string", "null"] }
+        avis: { type: object, additionalProperties: true }
+        agentMatricule: { type: ["string", "null"] }
+        chefRueNom: { type: ["string", "null"] }
+        chefRueAvenue: { type: ["string", "null"] }
+        statutFiche: { type: string, enum: [brouillon, soumise, validee, rejetee] }
+        statutPlaque: { type: string, enum: [non_generee, generee, a_reimprimer, imprimee] }
+        dateProspection: { type: string, format: date }
+        createdAt: { type: string, format: date-time }
+    FicheInput:
+      type: object
+      required: [commune, quartier, avenue, parcelleNo, proprietaireNom, telephone, typeOccupation, usageParcelle, dateProspection]
+      properties:
+        commune: { type: string, minLength: 1 }
+        quartier: { type: string, minLength: 1 }
+        avenue: { type: string, minLength: 1 }
+        parcelleNo: { type: string, minLength: 1 }
+        plaqueNo: { type: string }
+        proprietaireNom: { type: string, minLength: 1 }
+        telephone: { type: string, minLength: 1 }
+        typeOccupation: { type: string }
+        superficie: { type: number }
+        usageParcelle: { type: string }
+        plaqueExistante: { type: string }
+        statutPaiement: { type: string }
+        recuNo: { type: string }
+        sensibilisation: { type: string }
+        hygiene: { type: object, additionalProperties: true }
+        dechets: { type: object, additionalProperties: true }
+        facade: { type: object, additionalProperties: true }
+        drainage: { type: object, additionalProperties: true }
+        activites:
+          type: array
+          items: { type: string }
+        remarques: { type: string }
+        avis: { type: object, additionalProperties: true }
+        agentMatricule: { type: string }
+        chefRueNom: { type: string }
+        chefRueAvenue: { type: string }
+        dateProspection: { type: string, format: date }
+    FicheUpdate:
+      allOf:
+        - $ref: "#/components/schemas/FicheInput"
+    FicheDecision:
+      type: object
+      required: [decision]
+      properties:
+        decision: { type: string, enum: [validee, rejetee] }
+        motif: { type: string }
+    DuplicateCheck:
+      type: object
+      required: [duplicate]
+      properties:
+        duplicate: { type: boolean }
+        fiche:
+          oneOf:
+            - $ref: "#/components/schemas/Fiche"
+            - type: "null"
+    Plaque:
+      type: object
+      required: [id, ficheId, ficheNo, commune, quartier, avenue, plaqueNo, version, statut, svg, genereLe]
+      properties:
+        id: { type: string, format: uuid }
+        ficheId: { type: string, format: uuid }
+        ficheNo: { type: string }
+        commune: { type: string }
+        quartier: { type: string }
+        avenue: { type: string }
+        plaqueNo: { type: string }
+        version: { type: integer }
+        statut: { type: string, enum: [generee, a_reimprimer, imprimee] }
+        svg: { type: string }
+        genereLe: { type: string, format: date-time }
+        imprimeLe: { type: ["string", "null"], format: date-time }
+    Dashboard:
+      type: object
+      required: [totalFiches, enAttente, validees, plaquesAImprimer, repartitionCommunes, activiteRecente]
+      properties:
+        totalFiches: { type: integer }
+        enAttente: { type: integer }
+        validees: { type: integer }
+        plaquesAImprimer: { type: integer }
+        repartitionCommunes:
+          type: array
+          items:
+            type: object
+            required: [commune, total]
+            properties:
+              commune: { type: string }
+              total: { type: integer }
+        activiteRecente:
+          type: array
+          items:
+            type: object
+            required: [id, action, ficheNo, horodatage]
+            properties:
+              id: { type: string }
+              action: { type: string }
+              ficheNo: { type: string }
+              horodatage: { type: string, format: date-time }

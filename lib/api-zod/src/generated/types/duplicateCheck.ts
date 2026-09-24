@@ -5,7 +5,9 @@
  * API du registre parcellaire de Kinshasa
  * OpenAPI spec version: 0.1.0
  */
+import type { Fiche } from './fiche';
 
-export interface HealthStatus {
-  status: string;
+export interface DuplicateCheck {
+  duplicate: boolean;
+  fiche?: Fiche | null;
 }
