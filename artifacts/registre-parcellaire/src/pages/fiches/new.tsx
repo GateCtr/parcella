@@ -95,21 +95,22 @@ const REQUIRED_BY_RUBRIQUE = {
 } as const satisfies Record<RubriqueKey, readonly (keyof FicheFormValues)[]>;
 
 const STEPS = [
-  { id: 0, title: 'Identification', icon: MapPin },
-  { id: 1, title: 'Adressage', icon: Info },
-  { id: 2, title: 'Hygiène', icon: Sparkles },
-  { id: 3, title: 'Déchets', icon: Trash2 },
-  { id: 4, title: 'Façade', icon: LayoutTemplate },
-  { id: 5, title: 'Drainage', icon: Waves },
-  { id: 6, title: 'Activités', icon: Briefcase },
-  { id: 7, title: 'Remarques', icon: FileText },
-  { id: 8, title: 'Avis & Admin.', icon: ClipboardCheck },
+  { id: 0, title: 'Localisation', icon: MapPin },
+  { id: 1, title: 'Parcelle et propriétaire', icon: FileText },
+  { id: 2, title: 'Adressage', icon: Info },
+  { id: 3, title: 'Hygiène', icon: Sparkles },
+  { id: 4, title: 'Déchets', icon: Trash2 },
+  { id: 5, title: 'Façade', icon: LayoutTemplate },
+  { id: 6, title: 'Drainage', icon: Waves },
+  { id: 7, title: 'Activités', icon: Briefcase },
+  { id: 8, title: 'Remarques', icon: FileText },
+  { id: 9, title: 'Avis & Admin.', icon: ClipboardCheck },
 ];
 
 export default function FicheNew() {
   const [step, setStep] = useState(0);
   const [isCheckingDuplicate, setIsCheckingDuplicate] = useState(false);
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const pageRef = useRef<HTMLDivElement>(null);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   
@@ -119,7 +120,7 @@ export default function FicheNew() {
   });
   const createFiche = useCreateFiche();
   const activeSteps = useMemo(
-    () => STEPS.filter((item) => item.id === 0 || settings?.[RUBRIQUES[item.id - 1].key] === true),
+    () => STEPS.filter((item) => item.id < 2 || settings?.[RUBRIQUES[item.id - 2].key] === true),
     [settings],
   );
   const activeIndex = activeSteps.findIndex((item) => item.id === step);
@@ -169,7 +170,8 @@ export default function FicheNew() {
   }, [settings, activeIndex, activeSteps, step]);
 
   useEffect(() => {
-    if (scrollAreaRef.current) scrollAreaRef.current.scrollTop = 0;
+    const main = pageRef.current?.closest('main');
+    if (main) main.scrollTop = 0;
   }, [step]);
 
   const checkAddress = async (values: FicheFormValues): Promise<boolean> => {
@@ -205,20 +207,21 @@ export default function FicheNew() {
   const nextStep = async () => {
     if (isCheckingDuplicate || activeIndex < 0) return;
     let fieldsToValidate: (keyof FicheFormValues)[] = [];
-    if (step === 0) fieldsToValidate = ['commune', 'quartier', 'localite', 'avenue', 'parcelleNo', 'proprietaireNom', 'telephone', 'typeOccupation', 'usageParcelle', 'superficie', 'dateProspection'];
-    if (step === 1) fieldsToValidate = ['plaqueExistante', 'statutPaiement', 'recuNo', 'sensibilisation'];
-    if (step === 2) fieldsToValidate = ['hygiene_proprete', 'hygiene_ordures', 'hygiene_vegetation', 'hygiene_latrines', 'hygiene_eauxStagnantes'];
-    if (step === 3) fieldsToValidate = ['dechets_modeElimination', 'dechets_bacOrdures', 'dechets_visibles'];
-    if (step === 4) fieldsToValidate = ['facade_etat', 'facade_cloture', 'facade_emplacement', 'facade_emplacementAutre', 'facade_visibilite'];
-    if (step === 5) fieldsToValidate = ['drainage_canal', 'drainage_risque'];
-    if (step === 6) fieldsToValidate = ['activites', 'activites_autres'];
-    if (step === 7) fieldsToValidate = ['remarques'];
+    if (step === 0) fieldsToValidate = ['commune', 'quartier', 'localite', 'avenue', 'parcelleNo'];
+    if (step === 1) fieldsToValidate = ['proprietaireNom', 'telephone', 'typeOccupation', 'usageParcelle', 'superficie', 'dateProspection'];
+    if (step === 2) fieldsToValidate = ['plaqueExistante', 'statutPaiement', 'recuNo', 'sensibilisation'];
+    if (step === 3) fieldsToValidate = ['hygiene_proprete', 'hygiene_ordures', 'hygiene_vegetation', 'hygiene_latrines', 'hygiene_eauxStagnantes'];
+    if (step === 4) fieldsToValidate = ['dechets_modeElimination', 'dechets_bacOrdures', 'dechets_visibles'];
+    if (step === 5) fieldsToValidate = ['facade_etat', 'facade_cloture', 'facade_emplacement', 'facade_emplacementAutre', 'facade_visibilite'];
+    if (step === 6) fieldsToValidate = ['drainage_canal', 'drainage_risque'];
+    if (step === 7) fieldsToValidate = ['activites', 'activites_autres'];
+    if (step === 8) fieldsToValidate = ['remarques'];
 
     if (fieldsToValidate.length > 0) {
       const isValid = await form.trigger(fieldsToValidate);
       if (!isValid) return;
     }
-    if (step === 4 && form.getValues('facade_emplacement') === 'autre' && !form.getValues('facade_emplacementAutre')?.trim()) {
+    if (step === 5 && form.getValues('facade_emplacement') === 'autre' && !form.getValues('facade_emplacementAutre')?.trim()) {
       form.setError('facade_emplacementAutre', { message: "Veuillez préciser l'emplacement" });
       return;
     }
@@ -233,7 +236,8 @@ export default function FicheNew() {
 
   const onInvalid = (errors: FieldErrors<FicheFormValues>) => {
     const fieldsByStep: (keyof FicheFormValues)[][] = [
-      ['commune', 'quartier', 'localite', 'avenue', 'parcelleNo', 'proprietaireNom', 'telephone', 'typeOccupation', 'usageParcelle', 'superficie', 'dateProspection'],
+      ['commune', 'quartier', 'localite', 'avenue', 'parcelleNo'],
+      ['proprietaireNom', 'telephone', 'typeOccupation', 'usageParcelle', 'superficie', 'dateProspection'],
       ['plaqueExistante', 'statutPaiement', 'sensibilisation'],
       ['hygiene_proprete', 'hygiene_ordures', 'hygiene_vegetation', 'hygiene_latrines', 'hygiene_eauxStagnantes'],
       ['dechets_modeElimination', 'dechets_bacOrdures', 'dechets_visibles'],
@@ -250,7 +254,6 @@ export default function FicheNew() {
 
   const onSubmit = async (data: FicheFormValues) => {
     if (!settings || isCheckingDuplicate) return;
-    if (step === 0 && !(await checkAddress(data))) return;
     const input: FicheInput = {
       commune: data.commune,
       quartier: data.quartier,
@@ -335,8 +338,8 @@ export default function FicheNew() {
   if (settingsError || !settings) return <p role="alert" className="text-destructive">Impossible de charger les paramètres des rubriques. Réessayez avant de créer une fiche.</p>;
 
   return (
-    <div className="mx-auto flex h-full min-h-0 w-full max-w-3xl flex-col gap-4">
-      <div className="flex shrink-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+    <div ref={pageRef} className="mx-auto max-w-3xl space-y-6 pb-12">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Nouvelle prospection</h1>
           <p className="text-sm text-muted-foreground mt-1">
@@ -353,7 +356,7 @@ export default function FicheNew() {
         </div>
       </div>
 
-      <div className="flex shrink-0 gap-1 overflow-x-auto pb-2 scrollbar-hide">
+      <div className="flex gap-1 overflow-x-auto pb-2 scrollbar-hide">
         {activeSteps.map((s, i) => (
           <div 
             key={s.id} 
@@ -364,9 +367,9 @@ export default function FicheNew() {
         ))}
       </div>
 
-      <Card className="flex min-h-[20rem] min-w-0 flex-1 flex-col overflow-hidden border-t-4 shadow-md" style={{ borderTopColor: 'hsl(var(--primary))' }}>
-        <CardContent className="flex min-h-0 flex-1 flex-col p-0">
-          <div className="flex shrink-0 items-center gap-3 border-b px-4 py-4 sm:px-6 md:px-8">
+      <Card className="border-t-4 shadow-md" style={{ borderTopColor: 'hsl(var(--primary))' }}>
+        <CardContent className="p-4 sm:p-6 md:p-8">
+          <div className="mb-6 flex items-center gap-3 border-b pb-4">
             <div className="bg-primary/10 text-primary p-2 rounded-lg">
               <StepIcon className="h-6 w-6" />
             </div>
@@ -374,10 +377,9 @@ export default function FicheNew() {
           </div>
 
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit, onInvalid)} className="flex min-h-0 flex-1 flex-col">
-              <div ref={scrollAreaRef} className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6 md:px-8">
+            <form onSubmit={form.handleSubmit(onSubmit, onInvalid)} className="space-y-8">
               
-              {/* ÉTAPE 0: Identification */}
+              {/* ÉTAPE 0: Localisation */}
               <div className={step === 0 ? 'block space-y-6' : 'hidden'}>
                 <div className="space-y-4 bg-muted/20 p-4 rounded-lg border">
                   <h4 className="font-semibold border-b pb-2">Localisation</h4>
@@ -422,7 +424,10 @@ export default function FicheNew() {
                     </FormItem>
                   )} />
                 </div>
+              </div>
 
+              {/* ÉTAPE 1: Parcelle et propriétaire */}
+              <div className={step === 1 ? 'block space-y-6' : 'hidden'}>
                 <div className="space-y-4 bg-muted/20 p-4 rounded-lg border">
                   <h4 className="font-semibold border-b pb-2">Propriétaire et Parcelle</h4>
                   <FormField control={form.control} name="proprietaireNom" render={({ field }) => (
@@ -460,8 +465,8 @@ export default function FicheNew() {
                 </div>
               </div>
 
-              {/* ÉTAPE 1: Adressage */}
-              <div className={step === 1 && settings.adressage ? 'block space-y-6' : 'hidden'}>
+              {/* ÉTAPE 2: Adressage */}
+              <div className={step === 2 && settings.adressage ? 'block space-y-6' : 'hidden'}>
                 <CustomRadioGroup form={form} name="plaqueExistante" label="Plaque existante *" options={plaqueExistanteOptions} />
                 <CustomRadioGroup form={form} name="statutPaiement" label="Paiement de la plaque *" options={paiementOptions} />
                 
@@ -476,8 +481,8 @@ export default function FicheNew() {
                 <CustomRadioGroup form={form} name="sensibilisation" label="Niveau de sensibilisation *" options={sensibilisationOptions} />
               </div>
 
-              {/* ÉTAPE 2: Hygiène */}
-              <div className={step === 2 && settings.hygiene ? 'block space-y-6' : 'hidden'}>
+              {/* ÉTAPE 3: Hygiène */}
+              <div className={step === 3 && settings.hygiene ? 'block space-y-6' : 'hidden'}>
                 <CustomRadioGroup form={form} name="hygiene_proprete" label="Propreté générale *" options={hygieneOptions} />
                 <CustomRadioGroup form={form} name="hygiene_ordures" label="Gestion des ordures ménagères *" options={hygieneOptions} />
                 <CustomRadioGroup form={form} name="hygiene_vegetation" label="Végétation non entretenue *" options={hygieneOptions} />
@@ -485,15 +490,15 @@ export default function FicheNew() {
                 <CustomRadioGroup form={form} name="hygiene_eauxStagnantes" label="Eaux stagnantes *" options={hygieneOptions} />
               </div>
 
-              {/* ÉTAPE 3: Déchets */}
-              <div className={step === 3 && settings.dechets ? 'block space-y-6' : 'hidden'}>
+              {/* ÉTAPE 4: Déchets */}
+              <div className={step === 4 && settings.dechets ? 'block space-y-6' : 'hidden'}>
                 <CustomRadioGroup form={form} name="dechets_modeElimination" label="Mode d'élimination des déchets *" options={modeEliminationOptions} layout="col" />
                 <CustomRadioGroup form={form} name="dechets_bacOrdures" label="État du bac à ordures *" options={bacOrduresOptions} />
                 <CustomRadioGroup form={form} name="dechets_visibles" label="Déchets visibles devant la parcelle *" options={dechetsVisiblesOptions} />
               </div>
 
-              {/* ÉTAPE 4: Façade */}
-              <div className={step === 4 && settings.facade ? 'block space-y-6' : 'hidden'}>
+              {/* ÉTAPE 5: Façade */}
+              <div className={step === 5 && settings.facade ? 'block space-y-6' : 'hidden'}>
                 <CustomRadioGroup form={form} name="facade_etat" label="État de la façade *" options={etatFacadeOptions} />
                 <CustomRadioGroup form={form} name="facade_cloture" label="Type de clôture *" options={clotureOptions} />
                 <CustomRadioGroup form={form} name="facade_emplacement" label="Emplacement idéal de la plaque *" options={emplacementOptions} />
@@ -511,14 +516,14 @@ export default function FicheNew() {
                 <CustomRadioGroup form={form} name="facade_visibilite" label="Visibilité *" options={visibiliteOptions} />
               </div>
 
-              {/* ÉTAPE 5: Drainage */}
-              <div className={step === 5 && settings.drainage ? 'block space-y-6' : 'hidden'}>
+              {/* ÉTAPE 6: Drainage */}
+              <div className={step === 6 && settings.drainage ? 'block space-y-6' : 'hidden'}>
                 <CustomRadioGroup form={form} name="drainage_canal" label="Canalisation *" options={canalisationOptions} layout="col" />
                 <CustomRadioGroup form={form} name="drainage_risque" label="Risque d'érosion / inondation *" options={risqueOptions} />
               </div>
 
-              {/* ÉTAPE 6: Activités */}
-              <div className={step === 6 && settings.activites ? 'block space-y-6' : 'hidden'}>
+              {/* ÉTAPE 7: Activités */}
+              <div className={step === 7 && settings.activites ? 'block space-y-6' : 'hidden'}>
                 <CustomMultiSelect form={form} name="activites" label="Activités recensées (Sélection multiple)" options={activitesOptions} />
                 <FormField control={form.control} name="activites_autres" render={({ field }) => (
                   <FormItem>
@@ -529,8 +534,8 @@ export default function FicheNew() {
                 )} />
               </div>
 
-              {/* ÉTAPE 7: Remarques */}
-              <div className={step === 7 && settings.remarques ? 'block space-y-6' : 'hidden'}>
+              {/* ÉTAPE 8: Remarques */}
+              <div className={step === 8 && settings.remarques ? 'block space-y-6' : 'hidden'}>
                 <FormField control={form.control} name="remarques" render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-base font-semibold">Remarques et observations de l'agent</FormLabel>
@@ -540,8 +545,8 @@ export default function FicheNew() {
                 )} />
               </div>
 
-              {/* ÉTAPE 8: Avis de l'agent */}
-              <div className={step === 8 && settings.avis ? 'block space-y-6' : 'hidden'}>
+              {/* ÉTAPE 9: Avis de l'agent */}
+              <div className={step === 9 && settings.avis ? 'block space-y-6' : 'hidden'}>
                 <CustomRadioGroup form={form} name="avis_global" label="Avis global *" options={avisGlobalOptions} />
                 <CustomRadioGroup form={form} name="avis_priorite" label="Priorité d'intervention *" options={prioriteOptions} />
                 <CustomMultiSelect form={form} name="avis_suivi" label="Actions de suivi recommandées" options={suiviOptions} />
@@ -598,8 +603,7 @@ export default function FicheNew() {
                 </div>
               </div>
 
-              </div>
-              <div className="flex shrink-0 justify-between gap-2 border-t border-border/60 px-4 py-4 sm:px-6 md:px-8">
+              <div className="mt-8 flex justify-between gap-2 border-t border-border/60 pt-6">
                 <Button 
                   type="button" 
                   variant="outline" 
