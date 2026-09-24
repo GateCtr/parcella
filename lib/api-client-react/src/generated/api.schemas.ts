@@ -5,6 +5,63 @@
  * API du registre parcellaire de Kinshasa
  * OpenAPI spec version: 0.1.0
  */
+export type UserRole = typeof UserRole[keyof typeof UserRole];
+
+
+export const UserRole = {
+  admin_principal: 'admin_principal',
+  validateur: 'validateur',
+  agent: 'agent',
+} as const;
+
+export interface AuthUser {
+  id: string;
+  email: string;
+  role: UserRole;
+}
+
+export interface ManagedUser {
+  id: string;
+  email: string;
+  role: UserRole;
+  active: boolean;
+  createdAt: string;
+}
+
+export interface LoginInput {
+  /** @maxLength 254 */
+  email: string;
+  /**
+     * @minLength 20
+     * @maxLength 256
+     */
+  code: string;
+}
+
+export interface UserInput {
+  /** @maxLength 254 */
+  email: string;
+  role: UserRole;
+}
+
+export interface UserUpdate {
+  role?: UserRole;
+  active?: boolean;
+}
+
+export interface CreatedUser {
+  user: ManagedUser;
+  accessCode: string;
+}
+
+export interface AccessCode {
+  accessCode: string;
+}
+
+export interface LogoutResult {
+  success: boolean;
+}
+
 export interface HealthStatus {
   status: string;
 }

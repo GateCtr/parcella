@@ -9,12 +9,16 @@ import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { Link } from 'wouter';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/hooks/use-auth';
 
 export default function ImprimeriePage() {
   const { data: plaques, isLoading, isFetching, isError } = useListPlaques();
   const markPrinted = useMarkPlaquePrinted();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { user } = useAuth();
+
+  const canMarkPrinted = user?.role === 'admin_principal' || user?.role === 'validateur';
 
   const handleMarkPrinted = (id: string) => {
     markPrinted.mutate({ id }, {
@@ -97,9 +101,9 @@ export default function ImprimeriePage() {
                         >
                           <Eye className="h-4 w-4" />
                         </Link>
-                        {plaque.statut !== 'imprimee' && (
-                          <Button 
-                            variant="default" 
+                        {plaque.statut !== 'imprimee' && canMarkPrinted && (
+                          <Button
+                            variant="default"
                             size="sm"
                             onClick={() => handleMarkPrinted(plaque.id)}
                             disabled={markPrinted.isPending}

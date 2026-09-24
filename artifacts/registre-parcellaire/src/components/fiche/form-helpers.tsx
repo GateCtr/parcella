@@ -32,21 +32,21 @@ export function CustomRadioGroup({ form, name, label, options, layout = "wrap" }
         <FormControl>
           <div className={cn("flex min-w-0 gap-2", layout === "wrap" ? "flex-wrap" : "flex-col")}>
             {options.map((opt: any) => (
-              <label 
-                key={opt.value} 
+              <label
+                key={opt.value}
                 className={cn(
                   "flex min-w-0 max-w-full items-center justify-center break-words min-h-[48px] gap-2 px-4 py-2 border-2 rounded-md cursor-pointer transition-colors text-sm font-medium",
-                  field.value === opt.value 
-                    ? 'bg-primary/10 border-primary text-primary shadow-sm' 
+                  field.value === opt.value
+                    ? 'bg-primary/10 border-primary text-primary shadow-sm'
                     : 'bg-background hover:bg-muted text-foreground border-input'
                 )}
               >
-                <input 
-                  type="radio" 
-                  className="sr-only" 
-                  value={opt.value} 
-                  checked={field.value === opt.value} 
-                  onChange={() => field.onChange(opt.value)} 
+                <input
+                  type="radio"
+                  className="sr-only"
+                  value={opt.value}
+                  checked={field.value === opt.value}
+                  onChange={() => field.onChange(opt.value)}
                 />
                 {opt.label}
               </label>
@@ -71,25 +71,25 @@ export function CustomMultiSelect({ form, name, label, options }: any) {
               {options.map((opt: any) => {
                 const isChecked = selected.includes(opt.value);
                 return (
-                  <label 
-                    key={opt.value} 
+                  <label
+                    key={opt.value}
                     className={cn(
                       "flex min-w-0 items-center gap-3 px-3 py-3 border-2 rounded-md cursor-pointer transition-colors min-h-[48px]",
-                      isChecked 
-                        ? 'bg-primary/10 border-primary shadow-sm' 
+                      isChecked
+                        ? 'bg-primary/10 border-primary shadow-sm'
                         : 'bg-background hover:bg-muted border-input'
                     )}
                   >
-                    <Checkbox 
+                    <Checkbox
                       className="mt-0.5"
-                      checked={isChecked} 
+                      checked={isChecked}
                       onCheckedChange={(checked) => {
                         if (checked) {
                           field.onChange([...selected, opt.value]);
                         } else {
                           field.onChange(selected.filter((v: string) => v !== opt.value));
                         }
-                      }} 
+                      }}
                     />
                     <span className={cn(
                       "min-w-0 break-words text-sm leading-tight flex-1",

@@ -13,12 +13,12 @@ import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent } from '@/components/ui/card';
 import { DataSpinner } from '@/components/data-spinner';
 import { MapPin, Info, Sparkles, Trash2, LayoutTemplate, Waves, Briefcase, FileText, ClipboardCheck, ChevronRight, ChevronLeft, CheckCircle2, Loader2, ArrowLeft } from 'lucide-react';
-import { 
+import {
   typeOccupationOptions, usageParcelleOptions, plaqueExistanteOptions, paiementOptions,
-  sensibilisationOptions, hygieneOptions, modeEliminationOptions, bacOrduresOptions, 
-  dechetsVisiblesOptions, etatFacadeOptions, clotureOptions, emplacementOptions, 
-  visibiliteOptions, canalisationOptions, risqueOptions, activitesOptions, 
-  avisGlobalOptions, prioriteOptions, suiviOptions 
+  sensibilisationOptions, hygieneOptions, modeEliminationOptions, bacOrduresOptions,
+  dechetsVisiblesOptions, etatFacadeOptions, clotureOptions, emplacementOptions,
+  visibiliteOptions, canalisationOptions, risqueOptions, activitesOptions,
+  avisGlobalOptions, prioriteOptions, suiviOptions
 } from '@/components/fiche/constants';
 import { CustomRadioGroup, CustomMultiSelect, CustomSelect } from '@/components/fiche/form-helpers';
 import { RUBRIQUES, type RubriqueKey } from '@/lib/rubriques';
@@ -29,16 +29,16 @@ const ficheSchema = z.object({
   localite: z.string().max(120, '120 caractères maximum').optional(),
   avenue: z.string().min(1, 'Requis'),
   parcelleNo: z.string().min(1, 'Requis'),
-  
+
   proprietaireNom: z.string().min(1, 'Requis'),
   telephone: z.string().min(1, 'Requis'),
   typeOccupation: z.string().min(1, 'Requis'),
-  
+
   superficie: z.union([
     z.string().transform(v => (v === '' ? undefined : Number(v))),
     z.number()
   ]).refine(val => val === undefined || (!isNaN(val) && val > 0), "Doit être > 0").optional(),
-  
+
   usageParcelle: z.string().min(1, 'Requis'),
 
   plaqueExistante: z.string(),
@@ -113,7 +113,7 @@ export default function FicheNew() {
   const pageRef = useRef<HTMLDivElement>(null);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  
+
   const { data: communes, isLoading: loadingCommunes, isError: communesError } = useListCommunes();
   const { data: settings, isLoading: loadingSettings, isError: settingsError } = useGetRubriqueSettings({
     query: { queryKey: getGetRubriqueSettingsQueryKey(), refetchInterval: 30_000 },
@@ -265,14 +265,14 @@ export default function FicheNew() {
       typeOccupation: data.typeOccupation,
       superficie: typeof data.superficie === 'number' ? data.superficie : undefined,
       usageParcelle: data.usageParcelle,
-      
+
       ...(settings.adressage ? {
         plaqueExistante: data.plaqueExistante,
         statutPaiement: data.statutPaiement,
         recuNo: data.recuNo,
         sensibilisation: data.sensibilisation,
       } : {}),
-      
+
       hygiene: settings.hygiene ? {
         proprete: data.hygiene_proprete,
         ordures: data.hygiene_ordures,
@@ -280,13 +280,13 @@ export default function FicheNew() {
         latrines: data.hygiene_latrines,
         eauxStagnantes: data.hygiene_eauxStagnantes,
       } : {},
-      
+
       dechets: settings.dechets ? {
         modeElimination: data.dechets_modeElimination,
         bacOrdures: data.dechets_bacOrdures,
         visibles: data.dechets_visibles,
       } : {},
-      
+
       facade: settings.facade ? {
         etat: data.facade_etat,
         cloture: data.facade_cloture,
@@ -294,26 +294,26 @@ export default function FicheNew() {
         emplacementAutre: data.facade_emplacementAutre,
         visibilite: data.facade_visibilite,
       } : {},
-      
+
       drainage: settings.drainage ? {
         canal: data.drainage_canal,
         risque: data.drainage_risque,
       } : {},
-      
+
       activites: settings.activites ? [
         ...(data.activites || []),
         ...(data.activites_autres ? [data.activites_autres] : [])
       ] : [],
-      
+
       remarques: settings.remarques ? data.remarques : undefined,
-      
+
       avis: settings.avis ? {
         global: data.avis_global,
         priorite: data.avis_priorite,
         suivi: data.avis_suivi,
         attestation: data.avis_attestation,
       } : {},
-      
+
       agentMatricule: settings.avis ? data.agentMatricule : undefined,
       chefRueNom: settings.avis ? data.chefRueNom : undefined,
       chefRueAvenue: settings.avis ? data.chefRueAvenue : undefined,
@@ -358,8 +358,8 @@ export default function FicheNew() {
 
       <div className="flex gap-1 overflow-x-auto pb-2 scrollbar-hide">
         {activeSteps.map((s, i) => (
-          <div 
-            key={s.id} 
+          <div
+            key={s.id}
             className={`h-2 flex-1 min-w-[30px] rounded-full transition-colors ${
               i < activeIndex ? 'bg-primary' : i === activeIndex ? 'bg-primary/50' : 'bg-muted'
             }`}
@@ -378,7 +378,7 @@ export default function FicheNew() {
 
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit, onInvalid)} className="space-y-8">
-              
+
               {/* ÉTAPE 0: Localisation */}
               <div className={step === 0 ? 'block space-y-6' : 'hidden'}>
                 <div className="space-y-4 bg-muted/20 p-4 rounded-lg border">
@@ -444,10 +444,10 @@ export default function FicheNew() {
                       <FormMessage />
                     </FormItem>
                   )} />
-                  
+
                   <CustomRadioGroup form={form} name="typeOccupation" label="Occupation *" options={typeOccupationOptions} />
                   <CustomRadioGroup form={form} name="usageParcelle" label="Usage de la parcelle *" options={usageParcelleOptions} />
-                  
+
                   <FormField control={form.control} name="superficie" render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-base font-semibold">Superficie (m²)</FormLabel>
@@ -469,7 +469,7 @@ export default function FicheNew() {
               <div className={step === 2 && settings.adressage ? 'block space-y-6' : 'hidden'}>
                 <CustomRadioGroup form={form} name="plaqueExistante" label="Plaque existante *" options={plaqueExistanteOptions} />
                 <CustomRadioGroup form={form} name="statutPaiement" label="Paiement de la plaque *" options={paiementOptions} />
-                
+
                 <FormField control={form.control} name="recuNo" render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-base font-semibold">Numéro de reçu</FormLabel>
@@ -502,7 +502,7 @@ export default function FicheNew() {
                 <CustomRadioGroup form={form} name="facade_etat" label="État de la façade *" options={etatFacadeOptions} />
                 <CustomRadioGroup form={form} name="facade_cloture" label="Type de clôture *" options={clotureOptions} />
                 <CustomRadioGroup form={form} name="facade_emplacement" label="Emplacement idéal de la plaque *" options={emplacementOptions} />
-                
+
                 {form.watch('facade_emplacement') === 'autre' && (
                   <FormField control={form.control} name="facade_emplacementAutre" render={({ field }) => (
                     <FormItem>
@@ -512,7 +512,7 @@ export default function FicheNew() {
                     </FormItem>
                   )} />
                 )}
-                
+
                 <CustomRadioGroup form={form} name="facade_visibilite" label="Visibilité *" options={visibiliteOptions} />
               </div>
 
@@ -550,7 +550,7 @@ export default function FicheNew() {
                 <CustomRadioGroup form={form} name="avis_global" label="Avis global *" options={avisGlobalOptions} />
                 <CustomRadioGroup form={form} name="avis_priorite" label="Priorité d'intervention *" options={prioriteOptions} />
                 <CustomMultiSelect form={form} name="avis_suivi" label="Actions de suivi recommandées" options={suiviOptions} />
-                
+
                 <div className="mt-6">
                   <FormField control={form.control} name="agentMatricule" render={({ field }) => (
                     <FormItem>
@@ -560,7 +560,7 @@ export default function FicheNew() {
                     </FormItem>
                   )} />
                 </div>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField control={form.control} name="chefRueNom" render={({ field }) => (
                     <FormItem>
@@ -593,7 +593,7 @@ export default function FicheNew() {
                           Certification sur l'honneur *
                         </FormLabel>
                         <p className="text-sm text-muted-foreground">
-                          Je certifie que les informations recueillies dans cette fiche sont exactes et ont été 
+                          Je certifie que les informations recueillies dans cette fiche sont exactes et ont été
                           constatées lors de la visite sur le terrain. En cochant cette case, je valide ma soumission.
                         </p>
                         <FormMessage />
@@ -604,20 +604,20 @@ export default function FicheNew() {
               </div>
 
               <div className="mt-8 flex flex-wrap items-center justify-between gap-2 border-t border-border/60 pt-6">
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={prevStep} 
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={prevStep}
                   disabled={activeIndex <= 0 || isCheckingDuplicate || createFiche.isPending}
                   className="h-12 px-3 sm:px-6"
                 >
                   <ChevronLeft className="mr-2 h-5 w-5" /> Précédent
                 </Button>
-                
+
                 {activeIndex < activeSteps.length - 1 ? (
-                  <Button 
-                    type="button" 
-                    onClick={nextStep} 
+                  <Button
+                    type="button"
+                    onClick={nextStep}
                     disabled={step === 0 && (loadingCommunes || communesError) || isCheckingDuplicate || activeIndex < 0}
                     className="h-12 px-3 sm:px-6"
                   >
@@ -628,8 +628,8 @@ export default function FicheNew() {
                     )}
                   </Button>
                 ) : (
-                  <Button 
-                    type="submit" 
+                  <Button
+                    type="submit"
                     className="h-12 px-3 sm:px-8 bg-green-600 hover:bg-green-700 text-white font-bold"
                     disabled={createFiche.isPending || isCheckingDuplicate || (step === 0 && (loadingCommunes || communesError))}
                   >

@@ -9,11 +9,15 @@ import { cn } from '@/lib/utils';
 import { PlaquePreview } from '@/components/plaque-preview';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { LocaliteEditor } from '@/components/localite-editor';
+import { useAuth } from '@/hooks/use-auth';
 
 export default function FichePlaque() {
   const { id } = useParams();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  const canGenerate = user?.role === 'admin_principal' || user?.role === 'validateur';
 
   const { data: fiche, isLoading: isLoadingFiche, error: errorFiche } = useGetFiche(id ?? '', {
     query: { queryKey: getGetFicheQueryKey(id ?? ''), enabled: Boolean(id) },
@@ -92,16 +96,16 @@ export default function FichePlaque() {
             </p>
           </div>
         </div>
-        
+
         <div className="flex flex-wrap gap-2">
           {fiche.statutFiche !== 'validee' ? (
              <Alert variant="destructive" className="py-2 h-10 flex items-center mb-0">
                <AlertCircle className="h-4 w-4 mr-2" />
                <AlertDescription className="text-xs font-medium">Validation requise avant impression</AlertDescription>
              </Alert>
-           ) : !hasSvg || legacyPlaque ? (
-            <Button 
-              onClick={handleGenerate} 
+           ) : (!hasSvg || legacyPlaque) && canGenerate ? (
+            <Button
+              onClick={handleGenerate}
               disabled={generatePlaque.isPending}
               className="bg-primary text-white"
             >
@@ -109,9 +113,9 @@ export default function FichePlaque() {
             </Button>
           ) : (
             <>
-              {latestPlaque?.statut !== 'imprimee' && (
-                <Button 
-                  onClick={handleMarkPrinted} 
+              {latestPlaque?.statut !== 'imprimee' && canGenerate && (
+                <Button
+                  onClick={handleMarkPrinted}
                   disabled={markPrinted.isPending}
                   className="bg-green-600 hover:bg-green-700 text-white"
                 >
@@ -143,7 +147,7 @@ export default function FichePlaque() {
          <Alert className="no-print">
            <AlertCircle className="h-4 w-4" />
            <AlertTitle>Ancien modèle de plaque</AlertTitle>
-            <AlertDescription>Cette plaque utilise un ancien dessin ou une ancienne adresse. Actualisez-la pour créer une nouvelle version avec la localité et la taille de texte corrigées.</AlertDescription>
+            <AlertDescription>Cette plaque utilise un ancien dessin ou une ancienne adresse. {canGenerate && "Actualisez-la pour créer une nouvelle version avec la localité et la taille de texte corrigées."}</AlertDescription>
          </Alert>
        )}
        {!hasSvg && fiche.statutFiche === 'validee' && (
@@ -151,7 +155,7 @@ export default function FichePlaque() {
           <AlertCircle className="h-4 w-4 text-blue-600" />
           <AlertTitle className="text-blue-900 font-semibold">Prévisualisation</AlertTitle>
           <AlertDescription className="text-blue-800">
-            Ceci est un aperçu HTML du rendu final. Veuillez cliquer sur "Générer la plaque" pour figer le QR code, créer le SVG officiel, et l'ajouter à la file d'impression.
+            Ceci est un aperçu HTML du rendu final. {canGenerate ? 'Veuillez cliquer sur "Générer la plaque" pour figer le QR code, créer le SVG officiel, et l\'ajouter à la file d\'impression.' : 'En attente de génération par un validateur.'}
           </AlertDescription>
         </Alert>
       )}
@@ -159,10 +163,10 @@ export default function FichePlaque() {
       <div className="print-center-wrapper">
         {hasSvg && latestPlaque ? (
           <div className="w-full flex justify-center py-4 print:py-0">
-            <img 
-              src={`data:image/svg+xml,${encodeURIComponent(latestPlaque.svg)}`} 
-              alt={`Plaque ${latestPlaque.plaqueNo}`} 
-              className="w-full max-w-[900px] h-auto shadow-2xl print:shadow-none print:max-w-[277mm] print:max-h-[190mm] print:w-auto print:h-auto print-unscale" 
+            <img
+              src={`data:image/svg+xml,${encodeURIComponent(latestPlaque.svg)}`}
+              alt={`Plaque ${latestPlaque.plaqueNo}`}
+              className="w-full max-w-[900px] h-auto shadow-2xl print:shadow-none print:max-w-[277mm] print:max-h-[190mm] print:w-auto print:h-auto print-unscale"
             />
           </div>
         ) : (

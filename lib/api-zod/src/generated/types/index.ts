@@ -6,8 +6,11 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './accessCode';
+export * from './authUser';
 export * from './checkFicheDuplicateParams';
 export * from './commune';
+export * from './createdUser';
 export * from './dashboard';
 export * from './dashboardActiviteRecenteItem';
 export * from './dashboardRepartitionCommunesItem';
@@ -34,8 +37,14 @@ export * from './getDashboardParams';
 export * from './healthStatus';
 export * from './listFichesParams';
 export * from './listPlaquesParams';
+export * from './loginInput';
+export * from './logoutResult';
+export * from './managedUser';
 export * from './plaque';
 export * from './plaqueStatut';
 export * from './rubriqueSettingChange';
 export * from './rubriqueSettingChangeRubrique';
 export * from './rubriqueSettings';
+export * from './userInput';
+export * from './userRole';
+export * from './userUpdate';

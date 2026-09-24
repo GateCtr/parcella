@@ -19,3 +19,4 @@
 
 export * from "./registre";
 export * from "./rubrique-settings";
+export * from "./auth";

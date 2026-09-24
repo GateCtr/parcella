@@ -1,15 +1,17 @@
-import { UserButton } from '@clerk/react';
-import { Menu, Map } from 'lucide-react';
+import { Menu, Map, LogOut, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { SidebarNav } from './sidebar';
 import { useLocation, Link } from 'wouter';
 import { useState } from 'react';
+import { useAuth } from '@/hooks/use-auth';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 export default function Topbar() {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const [open, setOpen] = useState(false);
-  
+  const { user, logout } = useAuth();
+
   const getPageTitle = () => {
     if (location === '/dashboard') return 'Tableau de bord';
     if (location.startsWith('/fiches/nouvelle')) return 'Nouvelle fiche';
@@ -17,8 +19,23 @@ export default function Topbar() {
     if (location.startsWith('/fiches')) return 'Registre des fiches';
     if (location.startsWith('/imprimerie')) return 'File d\'impression';
     if (location === '/parametres') return 'Paramètres';
+    if (location === '/utilisateurs') return 'Utilisateurs';
     if (location === '/plaques/modele') return 'Modèle de plaque';
     return '';
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    setLocation('/sign-in');
+  };
+
+  const formatRole = (role: string) => {
+    switch (role) {
+      case 'admin_principal': return 'Administrateur Principal';
+      case 'validateur': return 'Validateur';
+      case 'agent': return 'Agent Terrain';
+      default: return role;
+    }
   };
 
   return (
@@ -42,21 +59,38 @@ export default function Topbar() {
           <SidebarNav onItemClick={() => setOpen(false)} />
         </SheetContent>
       </Sheet>
-      
+
       <div className="min-w-0 flex-1">
         <h1 className="text-lg font-semibold text-card-foreground">
           {getPageTitle()}
         </h1>
       </div>
-      
+
       <div className="flex items-center gap-4">
-        <UserButton
-          appearance={{
-            elements: {
-              avatarBox: "h-9 w-9 ring-2 ring-background"
-            }
-          }}
-        />
+        {user && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="relative h-9 w-9 rounded-full bg-primary/10">
+                <User className="h-5 w-5 text-primary" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-56" align="end" forceMount>
+              <DropdownMenuLabel className="font-normal">
+                <div className="flex flex-col space-y-1">
+                  <p className="text-sm font-medium leading-none">{user.email}</p>
+                  <p className="text-xs leading-none text-muted-foreground">
+                    {formatRole(user.role)}
+                  </p>
+                </div>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleLogout} className="text-destructive cursor-pointer">
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Se déconnecter</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </div>
     </header>
   );

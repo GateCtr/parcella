@@ -1,29 +1,45 @@
 import { Link, useLocation } from 'wouter';
 import { cn } from '@/lib/utils';
-import { FileText, LayoutDashboard, Printer, Map, LayoutTemplate, Settings2 } from 'lucide-react';
+import { FileText, LayoutDashboard, Printer, Map, LayoutTemplate, Settings2, Users } from 'lucide-react';
+import { useAuth } from '@/hooks/use-auth';
 
-const navItems = [
-  { href: '/dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
-  { href: '/fiches', label: 'Registre des fiches', icon: FileText },
-  { href: '/imprimerie', label: 'File d\'impression', icon: Printer },
-  { href: '/plaques/modele', label: 'Modèle de plaque', icon: LayoutTemplate },
-  { href: '/parametres', label: 'Paramètres', icon: Settings2 },
-];
+const getNavItems = (role: string) => {
+  const items = [
+    { href: '/dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
+    { href: '/fiches', label: 'Registre des fiches', icon: FileText },
+    { href: '/imprimerie', label: 'File d\'impression', icon: Printer },
+    { href: '/plaques/modele', label: 'Modèle de plaque', icon: LayoutTemplate },
+  ];
+
+  if (role === 'admin_principal' || role === 'validateur') {
+    items.push({ href: '/parametres', label: 'Paramètres', icon: Settings2 });
+  }
+
+  if (role === 'admin_principal') {
+    items.push({ href: '/utilisateurs', label: 'Utilisateurs', icon: Users });
+  }
+
+  return items;
+};
 
 export function SidebarNav({ className, onItemClick }: { className?: string, onItemClick?: () => void }) {
   const [location] = useLocation();
+  const { user } = useAuth();
+
+  if (!user) return null;
+  const navItems = getNavItems(user.role);
 
   return (
     <nav className={cn('flex flex-col gap-2 p-4', className)}>
       {navItems.map((item) => {
         // match exact or sub-routes correctly
-        const isActive = item.href === '/fiches' 
-          ? location.startsWith('/fiches') 
+        const isActive = item.href === '/fiches'
+          ? location.startsWith('/fiches')
           : location === item.href;
-          
+
         return (
-          <Link 
-            key={item.href} 
+          <Link
+            key={item.href}
             href={item.href}
             onClick={onItemClick}
             className={cn(

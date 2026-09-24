@@ -35,24 +35,24 @@ export function PlaquePreview({ parcelleNo, avenue, localite, quartier, commune,
 
   return (
     <div ref={containerRef} className="w-full flex justify-center overflow-hidden py-4 print:py-0">
-      <div 
+      <div
         className="shrink-0 relative bg-[#0a1f5c] shadow-2xl print:shadow-none print-unscale"
         style={{
-          width: '900px', 
-          height: '600px', 
-          transform: `scale(${scale})`, 
+          width: '900px',
+          height: '600px',
+          transform: `scale(${scale})`,
           transformOrigin: 'top center',
           marginBottom: scale < 1 ? `-${600 * (1 - scale)}px` : '0px',
           clipPath: 'polygon(30px 0, calc(100% - 30px) 0, 100% 30px, 100% calc(100% - 30px), calc(100% - 30px) 100%, 30px 100%, 0 calc(100% - 30px), 0 30px)'
         }}
       >
         {/* Liseré discret aux couleurs de la RDC */}
-        <div 
+        <div
           className="absolute inset-[14px] bg-gradient-to-r from-[#007FFF] via-[#F7D116] to-[#CE1126]"
           style={{ clipPath: 'polygon(16px 0, calc(100% - 16px) 0, 100% 16px, 100% calc(100% - 16px), calc(100% - 16px) 100%, 16px 100%, 0 calc(100% - 16px), 0 16px)' }}
         >
           {/* Fond blanc principal */}
-          <div 
+          <div
             className="absolute inset-[4px] bg-white p-12 flex flex-col justify-between"
             style={{ clipPath: 'polygon(12px 0, calc(100% - 12px) 0, 100% 12px, 100% calc(100% - 12px), calc(100% - 12px) 100%, 12px 100%, 0 calc(100% - 12px), 0 12px)' }}
           >

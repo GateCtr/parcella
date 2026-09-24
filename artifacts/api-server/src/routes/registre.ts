@@ -1,6 +1,5 @@
-import { Router, type IRouter } from "express";
+import { Router, type IRouter, type Request } from "express";
 import { and, desc, eq, ilike, or, sql } from "drizzle-orm";
-import { getAuth } from "@clerk/express";
 import { db, fichesTable, plaquesTable, auditTable, rubriqueSettingsTable } from "@workspace/db";
 import {
   CheckFicheDuplicateQueryParams,
@@ -22,17 +21,14 @@ import {
 } from "@workspace/api-zod";
 import { decrypt, encrypt } from "../lib/crypto";
 import { plaqueSvg } from "../lib/plaque-svg";
+import { requireRole, requireUser } from "../middlewares/session";
 
 const router: IRouter = Router();
 const COMMUNES = ["Bandalungwa","Barumbu","Bumbu","Gombe","Kalamu","Kasa-Vubu","Kimbanseke","Kinshasa","Kintambo","Kisenso","Lemba","Limete","Lingwala","Makala","Maluku","Masina","Matete","Mont-Ngafula","N'Djili","N'Sele","Ngaba","Ngaliema","Ngiri-Ngiri","Selembao"];
 const code = (name: string) => name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Za-z]/g, "").slice(0, 3).toUpperCase();
 
-function userId(req: Parameters<typeof getAuth>[0]) {
-  return getAuth(req).userId;
-}
-function requireUser(req: any, res: any, next: any) {
-  if (!userId(req)) { res.status(401).json({ error: "Authentification requise" }); return; }
-  next();
+function userId(req: Request) {
+  return req.currentUser!.id;
 }
 function publicFiche(row: typeof fichesTable.$inferSelect) {
   return { ...row, proprietaireNom: decrypt(row.proprietaireNom), telephone: decrypt(row.telephone), superficie: row.superficie, createdAt: row.createdAt.toISOString() };
@@ -64,7 +60,7 @@ router.get("/settings/rubriques", async (_req, res): Promise<void> => {
   res.json(GetRubriqueSettingsResponse.parse(rubriqueSettingsResponse(settings)));
 });
 
-router.patch("/settings/rubriques", async (req, res): Promise<void> => {
+router.patch("/settings/rubriques", requireRole("admin_principal"), async (req, res): Promise<void> => {
   const body = UpdateRubriqueSettingBody.safeParse(req.body);
   if (!body.success) { res.status(400).json({ error: body.error.message }); return; }
 
@@ -169,7 +165,7 @@ router.patch("/fiches/:id/localite", async (req, res): Promise<void> => {
   res.json(publicFiche(row));
 });
 
-router.post("/fiches/:id/decision", async (req, res): Promise<void> => {
+router.post("/fiches/:id/decision", requireRole("admin_principal", "validateur"), async (req, res): Promise<void> => {
   const p=DecideFicheParams.safeParse(req.params); const b=DecideFicheBody.safeParse(req.body);
   if(!p.success||!b.success){res.status(400).json({error:"Décision invalide"});return;}
   const [row]=await db.update(fichesTable).set({statutFiche:b.data.decision}).where(eq(fichesTable.id,p.data.id)).returning();
@@ -178,7 +174,7 @@ router.post("/fiches/:id/decision", async (req, res): Promise<void> => {
   res.json(publicFiche(row));
 });
 
-router.post("/fiches/:id/plaque", async (req,res):Promise<void>=>{
+router.post("/fiches/:id/plaque", requireRole("admin_principal", "validateur"), async (req,res):Promise<void>=>{
   const p=GeneratePlaqueParams.safeParse(req.params); if(!p.success){res.status(400).json({error:"Identifiant invalide"});return;}
   const [f]=await db.select().from(fichesTable).where(eq(fichesTable.id,p.data.id));
   if(!f){res.status(404).json({error:"Fiche introuvable"});return;}
@@ -203,7 +199,7 @@ router.get("/plaques", async (req,res):Promise<void>=>{
   res.json(rows.filter(({f})=>!p.data.statut||f.statutPlaque===p.data.statut).map(({p,f})=>({id:p.id,ficheId:f.id,ficheNo:f.ficheNo,commune:f.commune,quartier:f.quartier,avenue:f.avenue,plaqueNo:f.plaqueNo!,version:p.version,statut:f.statutPlaque,svg:p.svg,genereLe:p.genereLe.toISOString(),imprimeLe:p.imprimeLe?.toISOString()??null})));
 });
 
-router.post("/plaques/:id/imprimer",async(req,res):Promise<void>=>{
+router.post("/plaques/:id/imprimer",requireRole("admin_principal", "validateur"),async(req,res):Promise<void>=>{
   const p=MarkPlaquePrintedParams.safeParse(req.params);if(!p.success){res.status(400).json({error:"Identifiant invalide"});return;}
   const [plaque]=await db.update(plaquesTable).set({imprimeLe:new Date()}).where(eq(plaquesTable.id,p.data.id)).returning();
   if(!plaque){res.status(404).json({error:"Plaque introuvable"});return;}

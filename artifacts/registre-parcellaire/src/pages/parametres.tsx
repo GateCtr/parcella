@@ -9,6 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { DataSpinner } from '@/components/data-spinner';
 import { useToast } from '@/hooks/use-toast';
 import { RUBRIQUES } from '@/lib/rubriques';
+import { useAuth } from '@/hooks/use-auth';
 
 export default function Parametres() {
   const { data: settings, isLoading, isError } = useGetRubriqueSettings({
@@ -17,6 +18,9 @@ export default function Parametres() {
   const update = useUpdateRubriqueSetting();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { user } = useAuth();
+
+  const isAdmin = user?.role === 'admin_principal';
 
   if (isLoading) return <DataSpinner label="Chargement des paramètres…" />;
   if (isError || !settings) return <p role="alert" className="text-destructive">Impossible de charger les paramètres des rubriques.</p>;
@@ -27,6 +31,7 @@ export default function Parametres() {
         <h1 className="text-2xl font-bold tracking-tight">Paramètres des rubriques</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           Ces réglages sont communs à tous les agents. Une rubrique désactivée disparaît du formulaire et des fiches affichées ou imprimées ; les données déjà enregistrées sont conservées.
+          {!isAdmin && " (Lecture seule pour votre rôle)"}
         </p>
       </div>
 
@@ -48,7 +53,7 @@ export default function Parametres() {
               <Switch
                 id={`rubrique-${key}`}
                 checked={settings[key]}
-                disabled={update.isPending}
+                disabled={!isAdmin || update.isPending}
                 onCheckedChange={(active) => update.mutate({ data: { rubrique: key, active } }, {
                   onSuccess: (updated) => {
                     queryClient.setQueryData(getGetRubriqueSettingsQueryKey(), updated);

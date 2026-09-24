@@ -91,27 +91,27 @@ export default function DashboardPage() {
                     margin={{ top: 20, right: 30, left: 0, bottom: 20 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
-                    <XAxis 
-                      dataKey="commune" 
+                    <XAxis
+                      dataKey="commune"
                       tickLine={false}
                       axisLine={false}
                       tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
                       angle={-45}
                       textAnchor="end"
                     />
-                    <YAxis 
+                    <YAxis
                       tickLine={false}
                       axisLine={false}
                       tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
                     />
-                    <Tooltip 
+                    <Tooltip
                       cursor={{ fill: 'hsl(var(--muted))' }}
                       contentStyle={{ borderRadius: '8px', border: '1px solid hsl(var(--border))' }}
                     />
-                    <Bar 
-                      dataKey="total" 
-                      fill="hsl(var(--primary))" 
-                      radius={[4, 4, 0, 0]} 
+                    <Bar
+                      dataKey="total"
+                      fill="hsl(var(--primary))"
+                      radius={[4, 4, 0, 0]}
                       barSize={40}
                     />
                   </BarChart>

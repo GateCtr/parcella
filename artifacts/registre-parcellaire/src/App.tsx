@@ -1,5 +1,5 @@
 import { lazy, ReactNode, Suspense } from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider, QueryCache, MutationCache } from '@tanstack/react-query';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -11,9 +11,8 @@ import {
   Router as WouterRouter,
   Redirect,
 } from 'wouter';
-import { ClerkProvider, Show } from '@clerk/react';
-import { publishableKeyFromHost } from '@clerk/react/internal';
-import { frFR } from '@clerk/localizations';
+import { AuthProvider, useAuth } from '@/hooks/use-auth';
+import { getGetCurrentUserQueryKey } from '@workspace/api-client-react';
 
 import Home from '@/pages/home';
 import SignInPage from '@/pages/sign-in';
@@ -27,31 +26,66 @@ const FicheDetail = lazy(() => import('@/pages/fiches/detail'));
 const FicheExample = lazy(() => import('@/pages/fiches/example'));
 const Imprimerie = lazy(() => import('@/pages/imprimerie'));
 const Parametres = lazy(() => import('@/pages/parametres'));
+const Utilisateurs = lazy(() => import('@/pages/utilisateurs'));
 const PlaqueModele = lazy(() => import('@/pages/plaques/modele'));
 const FichePlaque = lazy(() => import('@/pages/plaques/fiche-plaque'));
 
-const queryClient = new QueryClient();
-const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
-const clerkPubKey = publishableKeyFromHost(
-  window.location.hostname,
-  import.meta.env.VITE_CLERK_PUBLISHABLE_KEY,
-);
-const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
+const handleUnauthorized = (error: unknown) => {
+  if (
+    error &&
+    typeof error === 'object' &&
+    'status' in error &&
+    error.status === 401
+  ) {
+    const authQueryKey = getGetCurrentUserQueryKey();
 
-function ProtectedRoute({ component: Component }: { component: React.ComponentType<any> }) {
+    queryClient.cancelQueries({
+      predicate: (query) => query.queryKey[0] !== authQueryKey[0]
+    });
+
+    queryClient.removeQueries({
+      predicate: (query) => query.queryKey[0] !== authQueryKey[0]
+    });
+
+    queryClient.setQueryData(authQueryKey, null);
+  }
+};
+
+const queryClient = new QueryClient({
+  queryCache: new QueryCache({
+    onError: handleUnauthorized,
+  }),
+  mutationCache: new MutationCache({
+    onError: handleUnauthorized,
+  }),
+});
+const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
+
+function ProtectedRoute({ component: Component, allowedRoles }: { component: React.ComponentType<any>, allowedRoles?: string[] }) {
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <DataSpinner />
+      </DashboardLayout>
+    );
+  }
+
+  if (!user) {
+    return <Redirect to="/sign-in" />;
+  }
+
+  if (allowedRoles && !allowedRoles.includes(user.role)) {
+    return <Redirect to="/dashboard" />;
+  }
+
   return (
-    <>
-      <Show when="signed-in">
-        <DashboardLayout>
-          <Suspense fallback={<DataSpinner />}>
-            <Component />
-          </Suspense>
-        </DashboardLayout>
-      </Show>
-      <Show when="signed-out">
-        <Redirect to="/sign-in" />
-      </Show>
-    </>
+    <DashboardLayout>
+      <Suspense fallback={<DataSpinner />}>
+        <Component />
+      </Suspense>
+    </DashboardLayout>
   );
 }
 
@@ -60,7 +94,7 @@ function Router() {
     <RoutedErrorBoundary>
       <Switch>
         <Route path="/" component={Home} />
-        
+
         <Route path="/sign-in/*?" component={SignInPage} />
         <Route path="/sign-up/*?">
           <Redirect to="/sign-in" />
@@ -69,7 +103,7 @@ function Router() {
         <Route path="/dashboard">
           {() => <ProtectedRoute component={Dashboard} />}
         </Route>
-        
+
         <Route path="/fiches">
           {() => <ProtectedRoute component={FichesList} />}
         </Route>
@@ -91,7 +125,11 @@ function Router() {
         </Route>
 
         <Route path="/parametres">
-          {() => <ProtectedRoute component={Parametres} />}
+          {() => <ProtectedRoute component={Parametres} allowedRoles={['admin_principal', 'validateur']} />}
+        </Route>
+
+        <Route path="/utilisateurs">
+          {() => <ProtectedRoute component={Utilisateurs} allowedRoles={['admin_principal']} />}
         </Route>
 
         <Route path="/plaques/modele">
@@ -120,21 +158,14 @@ function RoutedErrorBoundary({ children }: { children: ReactNode }) {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ClerkProvider
-        publishableKey={clerkPubKey}
-        localization={frFR}
-        signInUrl={`${basePath}/sign-in`}
-        signUpUrl={`${basePath}/sign-up`}
-        signInFallbackRedirectUrl="/dashboard"
-        proxyUrl={clerkProxyUrl}
-      >
+      <AuthProvider>
         <TooltipProvider>
           <WouterRouter base={basePath}>
             <Router />
           </WouterRouter>
           <Toaster />
         </TooltipProvider>
-      </ClerkProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

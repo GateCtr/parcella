@@ -11,6 +11,7 @@ import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import React from 'react';
 import { QRCodeSVG } from 'qrcode.react';
+import { useAuth } from '@/hooks/use-auth';
 
 const Checkbox = ({ checked, label, className }: { checked: boolean, label: React.ReactNode, className?: string }) => (
   <div className={cn("flex items-start gap-1.5", className)}>
@@ -40,7 +41,10 @@ export default function FicheDetail({ exampleFiche }: { exampleFiche?: Fiche }) 
   const { id } = useParams();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const isExample = Boolean(exampleFiche);
+
+  const canValidate = user?.role === 'admin_principal' || user?.role === 'validateur';
 
   const { data: savedFiche, isLoading, error } = useGetFiche(id ?? '', {
     query: { queryKey: getGetFicheQueryKey(id ?? ''), enabled: !isExample && Boolean(id) },
@@ -131,19 +135,19 @@ export default function FicheDetail({ exampleFiche }: { exampleFiche?: Fiche }) 
             </p>
           </div>
         </div>
-        
+
         <div className="flex flex-wrap items-center gap-2">
-          {!isExample && fiche.statutFiche === 'soumise' && (
+          {!isExample && fiche.statutFiche === 'soumise' && canValidate && (
             <>
-              <Button 
-                variant="destructive" 
+              <Button
+                variant="destructive"
                 onClick={() => handleDecision('rejetee')}
                 disabled={decideFiche.isPending}
               >
                 <XCircle className="mr-2 h-4 w-4" /> Rejeter
               </Button>
-              <Button 
-                className="bg-green-600 hover:bg-green-700 text-white" 
+              <Button
+                className="bg-green-600 hover:bg-green-700 text-white"
                 onClick={() => handleDecision('validee')}
                 disabled={decideFiche.isPending}
               >
@@ -152,8 +156,8 @@ export default function FicheDetail({ exampleFiche }: { exampleFiche?: Fiche }) 
             </>
           )}
 
-          {!isExample && fiche.statutFiche === 'validee' && fiche.statutPlaque === 'non_generee' && (
-            <Button 
+          {!isExample && fiche.statutFiche === 'validee' && fiche.statutPlaque === 'non_generee' && canValidate && (
+            <Button
               onClick={handleGeneratePlaque}
               disabled={generatePlaque.isPending}
               className="bg-primary text-white"
@@ -162,7 +166,7 @@ export default function FicheDetail({ exampleFiche }: { exampleFiche?: Fiche }) 
             </Button>
           )}
 
-          {!isExample && (
+          {!isExample && canValidate && (
             <Link
               href={`/fiches/${fiche.id}/plaque`}
               className={buttonVariants({ variant: 'secondary' })}
@@ -191,7 +195,7 @@ export default function FicheDetail({ exampleFiche }: { exampleFiche?: Fiche }) 
       {/* PAPER FORM DESIGN - 21cm width equivalent for A4 aspect */}
       <div className="overflow-x-auto pb-4 print:overflow-visible print:pb-0">
         <div className="bg-white mx-auto print-container shadow-sm print:shadow-none min-w-[21cm]" style={{ maxWidth: '21cm' }}>
-        
+
         {/* Page 1 Wrap */}
         <div className="px-4 py-6 md:p-8 print:p-0 min-h-[277mm] flex flex-col">
           {isExample && (
@@ -199,20 +203,20 @@ export default function FicheDetail({ exampleFiche }: { exampleFiche?: Fiche }) 
               Exemple fictif — ne constitue pas une fiche officielle
             </div>
           )}
-          
+
           {/* Header Section */}
           <div className="flex items-start gap-2 mb-4">
             <div className="w-[100px] flex-shrink-0 flex justify-center mt-2">
               <img src={`${import.meta.env.BASE_URL}kinshasa-seal.png`} className="w-[85px] h-auto object-contain" alt="Sceau Kinshasa" />
             </div>
-            
+
             <div className="flex-1 flex flex-col items-center justify-center">
               <div className="text-center mb-1 leading-tight">
                 <div className="font-bold text-[11px] text-black">REPUBLIQUE DEMOCRATIQUE<br/>DU CONGO</div>
                 <div className="text-[10px] text-gray-700 mt-1">VILLE PROVINCE DE KINSHASA</div>
                 <div className="text-[9px] text-gray-500 italic">Justice - Paix - Travail</div>
               </div>
-              
+
               <div className="bg-[#eaf1f8] w-full py-1.5 px-4 text-center border-b border-white">
                 <div className="text-[#184490] font-bold text-[12px] uppercase">COMMUNE DE {fiche.commune}</div>
                 <div className="text-[#a31a1a] font-bold text-[16px] leading-tight uppercase my-0.5">
@@ -224,7 +228,7 @@ export default function FicheDetail({ exampleFiche }: { exampleFiche?: Fiche }) 
               </div>
             </div>
           </div>
-          
+
            <div className="grid grid-cols-[minmax(0,1fr)_12rem_6.5rem] items-start gap-2 mb-2 text-[11px] font-bold text-[#184490]">
              <div className="flex flex-wrap items-start gap-x-4 gap-y-2 pt-1">
                <div className="flex items-baseline gap-1 whitespace-nowrap">
@@ -236,7 +240,7 @@ export default function FicheDetail({ exampleFiche }: { exampleFiche?: Fiche }) 
                  <span className="border-b border-black min-w-20 text-center text-black font-normal">{format(dateProsp, "dd/MM/yyyy")}</span>
                </div>
              </div>
-             
+
              <div className="border border-black flex flex-col w-full">
               <div className="text-center font-bold text-[#184490] border-b border-black bg-[#eaf1f8] text-[9px] py-0.5 uppercase tracking-wide">PÉRIODE :</div>
               <div className="bg-[#eaf1f8] p-1 pb-1.5 flex flex-col text-[9px] font-normal text-black">
@@ -251,7 +255,7 @@ export default function FicheDetail({ exampleFiche }: { exampleFiche?: Fiche }) 
                  <div className="text-center mt-1 font-medium">Année : 20<span className="border-b border-black inline-block w-6 text-center">{yearShort}</span></div>
               </div>
             </div>
-            
+
              <div className="border border-black w-[6.5rem] h-[6.5rem] flex flex-col items-center justify-center bg-white text-center text-[9px] text-gray-500">
                {ficheUrl ? (
                  <>
@@ -433,13 +437,13 @@ export default function FicheDetail({ exampleFiche }: { exampleFiche?: Fiche }) 
           </>)}
 
           <div className="flex-1"></div> {/* Spacer to preserve page-one layout */}
-          
+
         </div>
-        
+
         {hasPageTwoSections && (<>
         {/* Page Break for Print */}
         <div className="no-print h-4 bg-gray-100 border-y border-dashed border-gray-300 w-full mb-4 mt-2"></div>
-        
+
         {/* Page 2 Wrap */}
         <div className="px-4 py-6 md:p-8 print:p-0 print:break-before-page min-h-[277mm] flex flex-col">
           {isExample && (
@@ -447,7 +451,7 @@ export default function FicheDetail({ exampleFiche }: { exampleFiche?: Fiche }) 
               Exemple fictif — document non officiel
             </div>
           )}
-          
+
           {/* 5. FAÇADE */}
           {visibleSections.facade && (
           <div className="break-inside-avoid">
@@ -619,7 +623,7 @@ export default function FicheDetail({ exampleFiche }: { exampleFiche?: Fiche }) 
                 </tr>
               </tbody>
             </table>
-            
+
             <div className="bg-[#eaf1f8] border border-black mt-3 p-1.5 px-3 text-center text-[10px] italic text-black font-medium leading-tight shadow-sm">
               Je soussigné(e), certifie avoir effectué la prospection de la parcelle susmentionnée et que les informations ci-dessus sont exactes et conformes à la réalité constatée sur le terrain.
             </div>
@@ -670,12 +674,12 @@ export default function FicheDetail({ exampleFiche }: { exampleFiche?: Fiche }) 
               COMMUNE DE {fiche.commune} - MAISON COMMUNALE
             </div>
           )}
-          
+
         </div>
         </>)}
       </div>
       </div>
-      
+
       {/* Legacy Notes */}
       {((visibleSections.hygiene && hygiene.notes) || (visibleSections.dechets && dechets.notes) || (visibleSections.facade && facade.notes) || (visibleSections.drainage && drainage.notes)) && (
         <div className="max-w-5xl mx-auto mt-8 p-4 bg-muted/50 rounded-lg print:break-before-page print:bg-white print:mt-0">

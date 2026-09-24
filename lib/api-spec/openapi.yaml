@@ -8,12 +8,135 @@ servers:
     description: Base API path
 tags:
   - name: health
+  - name: auth
+  - name: users
   - name: communes
   - name: fiches
   - name: dashboard
   - name: plaques
   - name: settings
 paths:
+  /auth/me:
+    get:
+      operationId: getCurrentUser
+      tags: [auth]
+      responses:
+        "200":
+          description: Utilisateur connecté
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUser"
+        "401":
+          description: Authentification requise
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInput"
+      responses:
+        "200":
+          description: Session créée; cookie HttpOnly défini
+          headers:
+            Set-Cookie:
+              schema: { type: string }
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUser"
+        "401":
+          description: Identifiants invalides
+        "429":
+          description: Trop de tentatives
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      responses:
+        "200":
+          description: Session révoquée
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LogoutResult"
+  /users:
+    get:
+      operationId: listUsers
+      tags: [users]
+      responses:
+        "200":
+          description: Comptes utilisateurs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ManagedUser"
+        "401":
+          description: Authentification requise
+        "403":
+          description: Accès réservé aux administrateurs
+    post:
+      operationId: createUser
+      tags: [users]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserInput"
+      responses:
+        "201":
+          description: Compte créé; code d'accès affiché une seule fois
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreatedUser"
+        "400":
+          description: Données invalides
+        "409":
+          description: Adresse déjà utilisée
+  /users/{id}:
+    patch:
+      operationId: updateUser
+      tags: [users]
+      parameters:
+        - $ref: "#/components/parameters/UserId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserUpdate"
+      responses:
+        "200":
+          description: Compte mis à jour
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ManagedUser"
+        "404":
+          description: Utilisateur introuvable
+  /users/{id}/rotate-code:
+    post:
+      operationId: rotateUserCode
+      tags: [users]
+      parameters:
+        - $ref: "#/components/parameters/UserId"
+      responses:
+        "200":
+          description: Nouveau code affiché une seule fois
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccessCode"
+        "404":
+          description: Utilisateur introuvable
   /healthz:
     get:
       operationId: healthCheck
@@ -273,12 +396,70 @@ paths:
                 $ref: "#/components/schemas/RubriqueSettings"
 components:
   parameters:
+    UserId:
+      in: path
+      name: id
+      required: true
+      schema: { type: string, format: uuid }
     FicheId:
       in: path
       name: id
       required: true
       schema: { type: string, format: uuid }
   schemas:
+    UserRole:
+      type: string
+      enum: [admin_principal, validateur, agent]
+    AuthUser:
+      type: object
+      required: [id, email, role]
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string, format: email }
+        role: { $ref: "#/components/schemas/UserRole" }
+    ManagedUser:
+      type: object
+      required: [id, email, role, active, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string, format: email }
+        role: { $ref: "#/components/schemas/UserRole" }
+        active: { type: boolean }
+        createdAt: { type: string, format: date-time }
+    LoginInput:
+      type: object
+      required: [email, code]
+      properties:
+        email: { type: string, format: email, maxLength: 254 }
+        code: { type: string, minLength: 20, maxLength: 256 }
+    UserInput:
+      type: object
+      required: [email, role]
+      properties:
+        email: { type: string, format: email, maxLength: 254 }
+        role: { $ref: "#/components/schemas/UserRole" }
+    UserUpdate:
+      type: object
+      minProperties: 1
+      properties:
+        role: { $ref: "#/components/schemas/UserRole" }
+        active: { type: boolean }
+    CreatedUser:
+      type: object
+      required: [user, accessCode]
+      properties:
+        user: { $ref: "#/components/schemas/ManagedUser" }
+        accessCode: { type: string }
+    AccessCode:
+      type: object
+      required: [accessCode]
+      properties:
+        accessCode: { type: string }
+    LogoutResult:
+      type: object
+      required: [success]
+      properties:
+        success: { type: boolean }
     HealthStatus:
       type: object
       required: [status]

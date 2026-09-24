@@ -8,6 +8,95 @@
 import * as zod from 'zod';
 
 
+export const GetCurrentUserResponse = zod.object({
+  "id": zod.string().uuid(),
+  "email": zod.string().email(),
+  "role": zod.enum(['admin_principal', 'validateur', 'agent'])
+})
+
+
+export const loginBodyEmailMax = 254;
+
+export const loginBodyCodeMin = 20;
+export const loginBodyCodeMax = 256;
+
+
+
+export const LoginBody = zod.object({
+  "email": zod.string().email().max(loginBodyEmailMax),
+  "code": zod.string().min(loginBodyCodeMin).max(loginBodyCodeMax)
+})
+
+export const LoginResponse = zod.object({
+  "id": zod.string().uuid(),
+  "email": zod.string().email(),
+  "role": zod.enum(['admin_principal', 'validateur', 'agent'])
+})
+
+
+export const LogoutResponse = zod.object({
+  "success": zod.boolean()
+})
+
+
+export const ListUsersResponseItem = zod.object({
+  "id": zod.string().uuid(),
+  "email": zod.string().email(),
+  "role": zod.enum(['admin_principal', 'validateur', 'agent']),
+  "active": zod.boolean(),
+  "createdAt": zod.coerce.date()
+})
+export const ListUsersResponse = zod.array(ListUsersResponseItem)
+
+
+export const createUserBodyEmailMax = 254;
+
+
+
+export const CreateUserBody = zod.object({
+  "email": zod.string().email().max(createUserBodyEmailMax),
+  "role": zod.enum(['admin_principal', 'validateur', 'agent'])
+})
+
+export const CreateUserResponse = zod.object({
+  "user": zod.object({
+  "id": zod.string().uuid(),
+  "email": zod.string().email(),
+  "role": zod.enum(['admin_principal', 'validateur', 'agent']),
+  "active": zod.boolean(),
+  "createdAt": zod.coerce.date()
+}),
+  "accessCode": zod.string()
+})
+
+
+export const UpdateUserParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const UpdateUserBody = zod.object({
+  "role": zod.enum(['admin_principal', 'validateur', 'agent']).optional(),
+  "active": zod.boolean().optional()
+})
+
+export const UpdateUserResponse = zod.object({
+  "id": zod.string().uuid(),
+  "email": zod.string().email(),
+  "role": zod.enum(['admin_principal', 'validateur', 'agent']),
+  "active": zod.boolean(),
+  "createdAt": zod.coerce.date()
+})
+
+
+export const RotateUserCodeParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const RotateUserCodeResponse = zod.object({
+  "accessCode": zod.string()
+})
+
+
 export const HealthCheckResponse = zod.object({
   "status": zod.string()
 })

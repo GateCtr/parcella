@@ -141,8 +141,8 @@ export default function FichesList() {
                       {getStatutBadge(fiche.statutFiche)}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Link 
-                        href={`/fiches/${fiche.id}`} 
+                      <Link
+                        href={`/fiches/${fiche.id}`}
                         className={cn(buttonVariants({ variant: 'ghost', size: 'icon' }))}
                         title="Voir les détails"
                       >
