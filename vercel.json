@@ -1,0 +1,19 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "vite",
+  "buildCommand": "pnpm run build:vercel",
+  "outputDirectory": "artifacts/registre-parcellaire/dist/public",
+  "rewrites": [
+    { "source": "/api", "destination": "/api/index" },
+    { "source": "/api/:path*", "destination": "/api/index" },
+    { "source": "/:path*", "destination": "/index.html" }
+  ],
+  "headers": [
+    {
+      "source": "/api/:path*",
+      "headers": [
+        { "key": "Cache-Control", "value": "private, no-store" }
+      ]
+    }
+  ]
+}

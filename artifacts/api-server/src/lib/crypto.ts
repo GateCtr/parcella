@@ -1,7 +1,12 @@
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:crypto";
 
+const sessionSecret = process.env.SESSION_SECRET;
+if (process.env.NODE_ENV === "production" && !sessionSecret) {
+  throw new Error("SESSION_SECRET must be set in production.");
+}
+
 const key = createHash("sha256")
-  .update(process.env.SESSION_SECRET ?? "development-only-key")
+  .update(sessionSecret ?? "development-only-key")
   .digest();
 
 export function encrypt(value: string): string {
