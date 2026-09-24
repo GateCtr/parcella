@@ -19,14 +19,9 @@ export default function Home() {
             </Link>
           </Show>
           <Show when="signed-out">
-            <div className="flex items-center gap-4">
-              <Link href="/sign-in" className={buttonVariants({ variant: 'ghost' })}>
-                Connexion
-              </Link>
-              <Link href="/sign-up" className={buttonVariants({ variant: 'default' })}>
-                S'inscrire
-              </Link>
-            </div>
+            <Link href="/sign-in" className={buttonVariants({ variant: 'default' })}>
+              Connexion
+            </Link>
           </Show>
         </div>
       </header>

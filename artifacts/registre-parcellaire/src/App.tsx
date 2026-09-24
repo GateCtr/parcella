@@ -17,7 +17,6 @@ import { frFR } from '@clerk/localizations';
 
 import Home from '@/pages/home';
 import SignInPage from '@/pages/sign-in';
-import SignUpPage from '@/pages/sign-up';
 import DashboardLayout from '@/components/layout/dashboard-layout';
 
 const Dashboard = lazy(() => import('@/pages/dashboard'));
@@ -56,7 +55,9 @@ function Router() {
         <Route path="/" component={Home} />
         
         <Route path="/sign-in/*?" component={SignInPage} />
-        <Route path="/sign-up/*?" component={SignUpPage} />
+        <Route path="/sign-up/*?">
+          <Redirect to="/sign-in" />
+        </Route>
 
         <Route path="/dashboard">
           {() => <ProtectedRoute component={Dashboard} />}
@@ -98,7 +99,6 @@ function App() {
         signInUrl={`${basePath}/sign-in`}
         signUpUrl={`${basePath}/sign-up`}
         signInFallbackRedirectUrl="/dashboard"
-        signUpFallbackRedirectUrl="/dashboard"
         proxyUrl={clerkProxyUrl}
       >
         <TooltipProvider>

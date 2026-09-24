@@ -8,7 +8,11 @@ export default function SignInPage() {
           <h1 className="text-3xl font-bold text-primary mb-2">Registre Parcellaire</h1>
           <p className="text-muted-foreground">Ville Province de Kinshasa</p>
         </div>
-        <SignIn path="/sign-in" routing="path" signUpUrl="/sign-up" />
+        <SignIn
+          path={`${import.meta.env.BASE_URL.replace(/\/$/, '')}/sign-in`}
+          routing="path"
+          appearance={{ elements: { footerAction: { display: "none" } } }}
+        />
       </div>
     </div>
   );
