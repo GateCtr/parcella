@@ -57,7 +57,7 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="min-w-0 space-y-6">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {statCards.map((stat, i) => (
           <Card key={i}>
@@ -76,8 +76,8 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="col-span-1 lg:col-span-2">
+      <div className="grid min-w-0 grid-cols-1 gap-6 xl:grid-cols-3">
+        <Card className="min-w-0 xl:col-span-2">
           <CardHeader>
             <CardTitle>Répartition par commune</CardTitle>
             <CardDescription>Nombre de fiches recensées par commune</CardDescription>
@@ -125,34 +125,33 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="col-span-1">
-          <CardHeader>
+        <Card className="min-w-0 xl:col-span-1">
+          <CardHeader className="p-4 sm:p-6">
             <CardTitle>Activité récente</CardTitle>
             <CardDescription>Dernières fiches modifiées</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-4 pb-4 pt-0 sm:px-6 sm:pb-6">
             {dashboard.activiteRecente.length > 0 ? (
-              <div className="space-y-4">
+              <ol className="divide-y divide-border">
                 {dashboard.activiteRecente.map((activite) => (
-                  <div key={activite.id} className="flex items-start gap-4">
-                    <div className="mt-1 bg-primary/10 p-2 rounded-full text-primary">
+                  <li key={activite.id} className="flex min-w-0 items-start gap-3 py-3 first:pt-0 last:pb-0">
+                    <div className="shrink-0 rounded-full bg-primary/10 p-2 text-primary">
                       <FileText className="h-4 w-4" />
                     </div>
-                    <div>
-                      <p className="text-sm font-medium">
+                    <div className="min-w-0 flex-1">
+                      <p className="break-all text-sm font-medium">
                         Fiche {activite.ficheNo}
                       </p>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
-                        <span className="capitalize">{activite.action}</span>
-                        <span>•</span>
-                        <span>
+                      <div className="mt-1 space-y-0.5 text-xs text-muted-foreground">
+                        <p className="break-all capitalize">{activite.action}</p>
+                        <time className="block" dateTime={activite.horodatage}>
                           {format(new Date(activite.horodatage), "d MMM yyyy 'à' HH:mm", { locale: fr })}
-                        </span>
+                        </time>
                       </div>
                     </div>
-                  </div>
+                  </li>
                 ))}
-              </div>
+              </ol>
             ) : (
               <div className="py-8 text-center text-muted-foreground">
                 Aucune activité récente
