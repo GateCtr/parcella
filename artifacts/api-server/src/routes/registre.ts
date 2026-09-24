@@ -101,7 +101,7 @@ router.post("/fiches/:id/plaque", async (req,res):Promise<void>=>{
   if(!f){res.status(404).json({error:"Fiche introuvable"});return;}
   if(f.statutFiche!=="validee"){res.status(409).json({error:"La fiche doit être validée"});return;}
   const existing=await db.select().from(plaquesTable).where(eq(plaquesTable.ficheId,f.id)).orderBy(desc(plaquesTable.version));
-  if(existing.length&&["generee","a_reimprimer"].includes(f.statutPlaque)&&existing[0].svg.includes('id="plaque-city-seal-v2"')){res.status(409).json({error:"Plaque déjà générée"});return;}
+  if(existing.length&&["generee","a_reimprimer"].includes(f.statutPlaque)&&existing[0].svg.includes('id="plaque-layout-v3"')){res.status(409).json({error:"Plaque déjà générée"});return;}
   const version=(existing[0]?.version??0)+1; const plaqueNo=f.plaqueNo??`${code(f.commune)}-${f.parcelleNo}`;
   const domain = process.env.REPLIT_DOMAINS?.split(",")[0]?.trim();
   const host = domain || req.get("host");

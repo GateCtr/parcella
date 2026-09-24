@@ -32,10 +32,10 @@ export function plaqueSvg(f: FicheRow, plaqueNo: string, ficheUrl: string) {
   const numberFontSize = Math.min(230, Math.max(48, Math.floor(760 / (f.parcelleNo.length * 0.65))));
   const numberFit = numberFontSize * f.parcelleNo.length * 0.65 > 760 ? ' textLength="760" lengthAdjust="spacingAndGlyphs"' : "";
   const qr = QRCode.create(ficheUrl, { errorCorrectionLevel: "M" }).modules;
-  // Keep the QR centered below the city seal, inside the straight part of the border.
+  // Align the QR's bottom edge with the C/ address baseline.
   const qrX = 956;
-  const qrY = 570;
   const qrSize = 128;
+  const qrY = 651 - qrSize;
   const quietZone = 18;
   const cell = qrSize / qr.size;
   const modules: string[] = [];
@@ -60,7 +60,7 @@ export function plaqueSvg(f: FicheRow, plaqueNo: string, ficheUrl: string) {
   <path d="M0 604 909 0 H960 V47 L51 640 H0Z" fill="#ce1126"/>
   <polygon points="${star(175, 190, 134, 54)}" fill="#f7d116"/>
 </svg>
- <image id="plaque-city-seal-v2" x="943" y="102" width="154" height="154" href="${kinshasaSeal}" preserveAspectRatio="xMidYMid meet"/>
+ <image id="plaque-layout-v3" x="943" y="102" width="154" height="154" href="${kinshasaSeal}" preserveAspectRatio="xMidYMid meet"/>
 <text x="600" y="302" text-anchor="middle" fill="#193761" font-family="Arial Narrow,DejaVu Sans Condensed,Arial,sans-serif" font-weight="900" font-stretch="condensed" font-size="${numberFontSize}"${numberFit}>${xml(f.parcelleNo)}</text>
 ${textLine(`AV. ${address.toUpperCase()}`, 414)}
 ${textLine(`Q/ ${f.quartier.toUpperCase()}`, 533)}
