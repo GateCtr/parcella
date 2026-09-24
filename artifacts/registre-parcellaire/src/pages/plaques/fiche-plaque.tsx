@@ -72,7 +72,7 @@ export default function FichePlaque() {
 
   return (
     <div className="plaque-page-shell space-y-6 max-w-5xl mx-auto pb-20 font-sans">
-      <style>{'@media print { @page { size: A4 landscape; margin: 10mm; } }'}</style>
+      <style>{'@media print { @page { size: A4 landscape; margin: 0; } }'}</style>
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between no-print border-b pb-4">
         <div className="flex items-center gap-3">
           <Link href={`/fiches/${fiche.id}`} className={cn(buttonVariants({ variant: 'outline', size: 'icon' }), "h-10 w-10 shrink-0")}>

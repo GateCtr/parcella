@@ -206,8 +206,9 @@
 
   .plaque-page-shell {
     max-width: none !important;
-    width: 277mm !important;
-    padding: 0 !important;
+    box-sizing: border-box !important;
+    width: 297mm !important;
+    padding: 10mm !important;
     margin: 0 !important;
   }
   .plaque-page-shell .print-center-wrapper {
