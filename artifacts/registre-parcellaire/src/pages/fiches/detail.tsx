@@ -9,18 +9,29 @@ import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
-import { 
-  typeOccupationOptions, usageParcelleOptions, plaqueExistanteOptions, paiementOptions,
-  sensibilisationOptions, hygieneOptions, modeEliminationOptions, bacOrduresOptions, 
-  dechetsVisiblesOptions, etatFacadeOptions, clotureOptions, emplacementOptions, 
-  visibiliteOptions, canalisationOptions, risqueOptions, activitesOptions, 
-  avisGlobalOptions, prioriteOptions, suiviOptions, getLabel 
-} from '@/components/fiche/constants';
+import React from 'react';
 
-const DetailRow = ({ label, value }: { label: string, value: React.ReactNode }) => (
-  <div className="flex flex-col mb-4">
-    <dt className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">{label}</dt>
-    <dd className="font-medium text-foreground">{value || <span className="text-muted-foreground italic font-normal">Non renseigné</span>}</dd>
+const Checkbox = ({ checked, label, className }: { checked: boolean, label: React.ReactNode, className?: string }) => (
+  <div className={cn("flex items-start gap-1.5", className)}>
+    <div className="w-3 h-3 mt-[1px] border border-black flex-shrink-0 flex items-center justify-center bg-white">
+      {checked && (
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-2.5 h-2.5 text-black">
+          <path d="M2 2l10 10m0-10L2 12" />
+        </svg>
+      )}
+    </div>
+    {label && <span className="text-[11px] leading-tight text-black">{label}</span>}
+  </div>
+);
+
+const SectionHeader = ({ num, title }: { num: string, title: string }) => (
+  <div className="flex items-stretch mt-3 mb-1 break-after-avoid">
+    <div className="bg-[#184490] text-white font-bold text-[14px] w-6 flex items-center justify-center flex-shrink-0">
+      {num}
+    </div>
+    <div className="bg-[#eaf1f8] text-[#184490] font-bold text-[11px] flex-1 flex items-center px-2 uppercase tracking-wide">
+      {title}
+    </div>
   </div>
 );
 
@@ -34,7 +45,7 @@ export default function FicheDetail({ exampleFiche }: { exampleFiche?: Fiche }) 
     query: { queryKey: getGetFicheQueryKey(id ?? ''), enabled: !isExample && Boolean(id) },
   });
   const fiche = exampleFiche ?? savedFiche;
-  
+
   const decideFiche = useDecideFiche();
   const generatePlaque = useGeneratePlaque();
 
@@ -72,13 +83,18 @@ export default function FicheDetail({ exampleFiche }: { exampleFiche?: Fiche }) 
   const facade = (fiche.facade as Record<string, string>) || {};
   const drainage = (fiche.drainage as Record<string, string>) || {};
   const avis = (fiche.avis as any) || {};
+  const activites = fiche.activites || [];
 
   const dateProsp = new Date(fiche.dateProspection || fiche.createdAt);
   const quarter = Math.floor(dateProsp.getMonth() / 3) + 1;
   const year = dateProsp.getFullYear();
+  const yearShort = year.toString().slice(2);
+
+  const tdClass = "border border-black p-1 text-black";
+  const thClass = "border border-black bg-[#eaf1f8] font-bold p-1 text-black text-left";
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto pb-20 print:pb-0">
+    <div className="space-y-6 max-w-5xl mx-auto pb-20 print:pb-0 font-sans">
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between no-print border-b pb-4">
         <div className="flex items-center gap-3">
           <Link href={isExample ? '/' : '/fiches'} aria-label={isExample ? "Retour à l'accueil" : "Retour au registre"} className={cn(buttonVariants({ variant: 'outline', size: 'icon' }), "h-10 w-10 shrink-0")}>
@@ -95,6 +111,9 @@ export default function FicheDetail({ exampleFiche }: { exampleFiche?: Fiche }) 
             </h2>
             <p className="text-muted-foreground text-sm">
               {isExample ? 'Les informations ci-dessous sont fictives et servent uniquement à illustrer la fiche.' : `Soumise le ${format(new Date(fiche.createdAt), "dd MMMM yyyy 'à' HH:mm", { locale: fr })}`}
+            </p>
+            <p className="mt-2 text-xs text-muted-foreground sm:hidden">
+              Faites glisser la fiche vers la gauche pour voir toutes ses colonnes.
             </p>
           </div>
         </div>
@@ -146,206 +165,472 @@ export default function FicheDetail({ exampleFiche }: { exampleFiche?: Fiche }) 
         </div>
       </div>
 
-      {/* PAPER FORM DESIGN */}
-      <div className="bg-white text-black p-6 md:p-12 border rounded-xl shadow-sm print:shadow-none print:border-none print:p-0 font-sans mx-auto max-w-4xl print-container">
-        {isExample && (
-          <div className="mb-6 border-2 border-dashed border-amber-700 bg-amber-50 px-4 py-3 text-center text-sm font-bold uppercase tracking-wide text-amber-900">
-            Exemple fictif — ne constitue pas une fiche officielle
-          </div>
-        )}
+      {/* PAPER FORM DESIGN - 21cm width equivalent for A4 aspect */}
+      <div className="overflow-x-auto pb-4 print:overflow-visible print:pb-0">
+        <div className="bg-white mx-auto print-container shadow-sm print:shadow-none min-w-[21cm]" style={{ maxWidth: '21cm' }}>
         
-        {/* Header Section */}
-        <div className="flex flex-col items-center justify-center text-center font-serif mb-6">
-          <p className="font-bold text-sm tracking-wide">RÉPUBLIQUE DÉMOCRATIQUE DU CONGO</p>
-          <p className="font-bold text-sm tracking-wide">VILLE PROVINCE DE KINSHASA</p>
-          <p className="font-bold text-sm tracking-wide uppercase">COMMUNE DE {fiche.commune}</p>
-          
-          <h1 className="text-xl md:text-2xl font-bold mt-6 mb-2 border-y-4 border-double border-black py-3 w-full max-w-2xl">
-            FICHE DE PROSPECTION PARCELLAIRE
-          </h1>
-        </div>
-        
-        <div className="flex justify-between items-end mb-8 border-b-2 border-black pb-4">
-          <div className="space-y-1">
-            <p className="text-lg">N° Fiche: <strong className="text-xl">{fiche.ficheNo}</strong></p>
-            <p>Date: <strong>{format(dateProsp, "dd/MM/yyyy")}</strong></p>
-            <p>Trimestre: <strong>T{quarter} / {year}</strong></p>
-          </div>
-          
-          <div className="w-28 h-28 border-2 border-dashed border-gray-400 flex flex-col items-center justify-center text-gray-400 text-xs text-center p-2 bg-gray-50/50 relative overflow-hidden">
-            Espace réservé<br/>Code QR
-          </div>
-        </div>
-
-        {/* 1. IDENTIFICATION */}
-        <div className="mb-8">
-          <h3 className="font-bold text-lg bg-black text-white px-3 py-1 mb-4 uppercase">1. Identification</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 px-2">
-            <DetailRow label="Quartier" value={fiche.quartier} />
-            <DetailRow label="Avenue / Rue" value={fiche.avenue} />
-            <DetailRow label="N° Parcelle" value={fiche.parcelleNo} />
-            <DetailRow label="N° Plaque existante" value={fiche.plaqueNo} />
-            
-            <div className="col-span-2 md:col-span-4 border-t pt-3 mt-1"></div>
-            
-            <DetailRow label="Nom du propriétaire" value={fiche.proprietaireNom} />
-            <DetailRow label="Téléphone" value={fiche.telephone} />
-            <DetailRow label="Occupation" value={getLabel(fiche.typeOccupation, typeOccupationOptions)} />
-            
-            <div className="col-span-2 md:col-span-4 border-t pt-3 mt-1"></div>
-
-            <DetailRow label="Superficie" value={fiche.superficie ? `${fiche.superficie} m²` : undefined} />
-            <DetailRow label="Usage de la parcelle" value={getLabel(fiche.usageParcelle, usageParcelleOptions)} />
-          </div>
-        </div>
-
-        {/* 2. ADRESSAGE */}
-        <div className="mb-8 break-inside-avoid">
-          <h3 className="font-bold text-lg bg-black text-white px-3 py-1 mb-4 uppercase">2. Adressage</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 px-2">
-            <DetailRow label="Plaque existante" value={getLabel(fiche.plaqueExistante, plaqueExistanteOptions)} />
-            <DetailRow label="Statut paiement" value={getLabel(fiche.statutPaiement, paiementOptions)} />
-            <DetailRow label="N° Reçu" value={fiche.recuNo} />
-            <DetailRow label="Sensibilisation" value={getLabel(fiche.sensibilisation, sensibilisationOptions)} />
-          </div>
-        </div>
-
-        {/* 3. HYGIÈNE */}
-        <div className="mb-8 break-inside-avoid">
-          <h3 className="font-bold text-lg bg-black text-white px-3 py-1 mb-4 uppercase">3. Hygiène</h3>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 px-2">
-            <DetailRow label="Propreté générale" value={getLabel(hygiene.proprete, hygieneOptions)} />
-            <DetailRow label="Ordures ménagères" value={getLabel(hygiene.ordures, hygieneOptions)} />
-            <DetailRow label="Végétation non entretenue" value={getLabel(hygiene.vegetation, hygieneOptions)} />
-            <DetailRow label="Salubrité des latrines" value={getLabel(hygiene.latrines, hygieneOptions)} />
-            <DetailRow label="Eaux stagnantes" value={getLabel(hygiene.eauxStagnantes, hygieneOptions)} />
-            {hygiene.notes && <DetailRow label="Notes (anciennes données)" value={hygiene.notes} />}
-          </div>
-        </div>
-
-        {/* 4. DÉCHETS */}
-        <div className="mb-8 break-inside-avoid">
-          <h3 className="font-bold text-lg bg-black text-white px-3 py-1 mb-4 uppercase">4. Déchets</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 px-2">
-            <DetailRow label="Mode d'élimination" value={getLabel(dechets.modeElimination, modeEliminationOptions)} />
-            <DetailRow label="État du bac à ordures" value={getLabel(dechets.bacOrdures, bacOrduresOptions)} />
-            <DetailRow label="Déchets visibles devant la parcelle" value={getLabel(dechets.visibles, dechetsVisiblesOptions)} />
-            {dechets.notes && <DetailRow label="Notes (anciennes données)" value={dechets.notes} />}
-          </div>
-        </div>
-
-        {/* 5. FAÇADE */}
-        <div className="mb-8 break-inside-avoid">
-          <h3 className="font-bold text-lg bg-black text-white px-3 py-1 mb-4 uppercase">5. Façade</h3>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 px-2">
-            <DetailRow label="État de la façade" value={getLabel(facade.etat, etatFacadeOptions)} />
-            <DetailRow label="Type de clôture" value={getLabel(facade.cloture, clotureOptions)} />
-            <DetailRow label="Visibilité" value={getLabel(facade.visibilite, visibiliteOptions)} />
-            <div className="col-span-2 md:col-span-3">
-              <DetailRow 
-                label="Emplacement idéal plaque" 
-                value={facade.emplacement === 'autre' ? `Autre: ${facade.emplacementAutre || 'Non précisé'}` : getLabel(facade.emplacement, emplacementOptions)} 
-              />
+        {/* Page 1 Wrap */}
+        <div className="px-4 py-6 md:p-8 print:p-0 min-h-[277mm] flex flex-col">
+          {isExample && (
+            <div className="mb-4 border-2 border-dashed border-amber-700 bg-amber-50 px-3 py-2 text-center text-[11px] font-bold uppercase tracking-wide text-amber-900 print:border-black print:text-black print:bg-white">
+              Exemple fictif — ne constitue pas une fiche officielle
             </div>
-            {facade.notes && <DetailRow label="Notes (anciennes données)" value={facade.notes} />}
-          </div>
-        </div>
-
-        {/* 6. DRAINAGE */}
-        <div className="mb-8 break-inside-avoid">
-          <h3 className="font-bold text-lg bg-black text-white px-3 py-1 mb-4 uppercase">6. Drainage</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 px-2">
-            <DetailRow label="Canalisation" value={getLabel(drainage.canal, canalisationOptions)} />
-            <DetailRow label="Risque (érosion/inondation)" value={getLabel(drainage.risque, risqueOptions)} />
-            {drainage.notes && <DetailRow label="Notes (anciennes données)" value={drainage.notes} />}
-          </div>
-        </div>
-
-        {/* 7. ACTIVITÉS */}
-        <div className="mb-8 break-inside-avoid">
-          <h3 className="font-bold text-lg bg-black text-white px-3 py-1 mb-4 uppercase">7. Activités</h3>
-          <div className="px-2">
-            {fiche.activites && fiche.activites.length > 0 ? (
-              <ul className="list-disc list-inside space-y-1 ml-2 font-medium">
-                {fiche.activites.map((act, i) => (
-                  <li key={i}>{getLabel(act, activitesOptions)}</li>
-                ))}
-              </ul>
-            ) : (
-              <span className="italic text-muted-foreground">Aucune activité renseignée</span>
-            )}
-          </div>
-        </div>
-
-        {/* 8. REMARQUES ET OBSERVATIONS DE L'AGENT */}
-        <div className="mb-8 break-inside-avoid">
-          <h3 className="font-bold text-lg bg-black text-white px-3 py-1 mb-4 uppercase">8. Remarques et observations de l'agent</h3>
-          <div className="px-2">
-            <div className="bg-gray-50 border p-4 min-h-[80px]">
-              <p className="font-medium whitespace-pre-wrap">{fiche.remarques || <span className="italic text-gray-400">Aucune remarque</span>}</p>
+          )}
+          
+          {/* Header Section */}
+          <div className="flex items-start gap-2 mb-4">
+            <div className="w-[100px] flex-shrink-0 flex justify-center mt-2">
+              <img src={`${import.meta.env.BASE_URL}kinshasa-seal.png`} className="w-[85px] h-auto object-contain" alt="Sceau Kinshasa" />
             </div>
-          </div>
-        </div>
-
-        {/* 9. AVIS DE L'AGENT DE PROSPECTION */}
-        <div className="mb-4 break-inside-avoid">
-          <h3 className="font-bold text-lg bg-black text-white px-3 py-1 mb-4 uppercase">9. Avis de l'agent de prospection</h3>
-          <div className="px-2 space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <DetailRow label="Avis global" value={getLabel(avis.global, avisGlobalOptions)} />
-              <DetailRow label="Priorité d'intervention" value={getLabel(avis.priorite, prioriteOptions)} />
-              <div>
-                <dt className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">Actions de suivi</dt>
-                <dd className="font-medium">
-                  {avis.suivi && avis.suivi.length > 0 ? (
-                    <ul className="list-disc list-inside">
-                      {avis.suivi.map((s: string, i: number) => <li key={i}>{getLabel(s, suiviOptions)}</li>)}
-                    </ul>
-                  ) : <span className="italic text-muted-foreground font-normal">Aucune</span>}
-                </dd>
+            
+            <div className="flex-1 flex flex-col items-center justify-center">
+              <div className="text-center mb-1 leading-tight">
+                <div className="font-bold text-[11px] text-black">REPUBLIQUE DEMOCRATIQUE<br/>DU CONGO</div>
+                <div className="text-[10px] text-gray-700 mt-1">VILLE PROVINCE DE KINSHASA</div>
+                <div className="text-[9px] text-gray-500 italic">Justice - Paix - Travail</div>
               </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 mb-4">
-              <DetailRow label="Agent recenseur (Matricule)" value={fiche.agentMatricule} />
-              <DetailRow label="Date de prospection" value={fiche.dateProspection ? format(new Date(fiche.dateProspection), "dd/MM/yyyy") : undefined} />
-              <DetailRow label="Chef de rue (Témoin)" value={fiche.chefRueNom} />
-              <DetailRow label="Avenue du Chef de rue" value={fiche.chefRueAvenue} />
-            </div>
-
-            <div className="bg-gray-100 p-4 border border-gray-300 rounded mb-8">
-              <div className="flex gap-3">
-                <div className="mt-1">
-                  {avis.attestation ? (
-                    <CheckCircle className="h-6 w-6 text-black" />
-                  ) : (
-                    <div className="h-5 w-5 border-2 border-black rounded-sm" />
-                  )}
+              
+              <div className="bg-[#eaf1f8] w-full py-1.5 px-4 text-center border-b border-white">
+                <div className="text-[#184490] font-bold text-[12px] uppercase">COMMUNE DE {fiche.commune}</div>
+                <div className="text-[#a31a1a] font-bold text-[16px] leading-tight uppercase my-0.5">
+                  FICHE DE PROSPECTION<br/>PARCELLAIRE
                 </div>
-                <p className="text-sm font-medium leading-relaxed text-black">
-                  L'agent soussigné certifie sur l'honneur que les informations recueillies dans cette fiche sont exactes et ont été formellement constatées lors de la visite sur le terrain.
-                </p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-3 gap-8 mt-12 px-2 text-center text-sm font-bold h-32">
-              <div className="border-t border-black pt-2 flex flex-col justify-between">
-                <span>Le Propriétaire / L'Occupant</span>
-                <span className="text-xs text-muted-foreground font-normal">{fiche.proprietaireNom}</span>
-              </div>
-              <div className="border-t border-black pt-2 flex flex-col justify-between">
-                <span>Le Chef de rue</span>
-                <span className="text-xs text-muted-foreground font-normal">{fiche.chefRueNom || "_____________________"}</span>
-              </div>
-              <div className="border-t border-black pt-2 flex flex-col justify-between">
-                <span>L'Agent Recenseur</span>
-                <span className="text-xs text-muted-foreground font-normal">{fiche.agentMatricule || "_____________________"}</span>
+                <div className="text-[#184490] italic text-[10px]">
+                  Identification et Adressage Parcellaire - Quartier {fiche.quartier || '_________________'}
+                </div>
               </div>
             </div>
           </div>
-        </div>
+          
+          <div className="flex justify-between items-end mb-2 text-[11px] font-bold text-[#184490]">
+            <div className="flex items-center gap-1">
+              <span>N° Fiche :</span>
+              <span className="border-b border-black w-14 text-center text-black font-normal">{fiche.ficheNo}</span>
+              <span>/ 20{yearShort}</span>
+            </div>
+            
+            <div className="flex items-center gap-1 mb-1">
+              <span>Date :</span>
+              <span className="border-b border-black w-24 text-center text-black font-normal">{format(dateProsp, "dd/MM/yyyy")}</span>
+            </div>
+            
+            <div className="border border-black flex flex-col w-48 shadow-sm">
+              <div className="text-center font-bold text-[#184490] border-b border-black bg-[#eaf1f8] text-[9px] py-0.5 uppercase tracking-wide">PÉRIODE :</div>
+              <div className="bg-[#eaf1f8] p-1 pb-1.5 flex flex-col text-[9px] font-normal text-black">
+                 <div className="flex justify-between px-1">
+                   <Checkbox checked={quarter === 1} label="Trimestre 1" />
+                   <Checkbox checked={quarter === 2} label="Trimestre 2" />
+                 </div>
+                 <div className="flex justify-between px-1 mt-1">
+                   <Checkbox checked={quarter === 3} label="Trimestre 3" />
+                   <Checkbox checked={quarter === 4} label="Trimestre 4" />
+                 </div>
+                 <div className="text-center mt-1 font-medium">Année : 20<span className="border-b border-black inline-block w-6 text-center">{yearShort}</span></div>
+              </div>
+            </div>
+            
+            <div className="border border-black w-24 h-14 flex items-center justify-center text-gray-400 text-[9px] italic bg-white shrink-0">
+              [ QR CODE ]
+            </div>
+          </div>
 
+          {/* 1. IDENTIFICATION */}
+          <SectionHeader num="1" title="IDENTIFICATION DE LA PARCELLE" />
+          <table className="w-full text-[11px] border-collapse border border-black mb-1">
+            <tbody>
+              <tr>
+                <td className={`${thClass} w-[22%]`}>Quartier :</td>
+                <td className={`${tdClass} w-[28%]`}>{fiche.quartier}</td>
+                <td className={`${thClass} w-[22%]`}>Avenue / Rue :</td>
+                <td className={`${tdClass} w-[28%]`}>{fiche.avenue}</td>
+              </tr>
+              <tr>
+                <td className={thClass}>N° de la Parcelle :</td>
+                <td className={tdClass}>{fiche.parcelleNo}</td>
+                <td className={thClass}>N° de la Plaque :</td>
+                <td className={tdClass}>{fiche.plaqueNo}</td>
+              </tr>
+              <tr>
+                <td className={thClass}>Nom du Propriétaire :</td>
+                <td className={tdClass} colSpan={3}>{fiche.proprietaireNom}</td>
+              </tr>
+              <tr>
+                <td className={thClass}>Téléphone :</td>
+                <td className={tdClass}>{fiche.telephone}</td>
+                <td className={thClass}>Type d'occupation :</td>
+                <td className={tdClass}>
+                  <div className="flex gap-2 flex-wrap">
+                    <Checkbox checked={fiche.typeOccupation === 'proprietaire'} label="Propriétaire" />
+                    <Checkbox checked={fiche.typeOccupation === 'locataire'} label="Locataire" />
+                    <Checkbox checked={fiche.typeOccupation === 'autre'} label="Autre" />
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td className={thClass}>Superficie estimée :</td>
+                <td className={tdClass}>{fiche.superficie ? `${fiche.superficie} m²` : ''}</td>
+                <td className={thClass}>Usage de la parcelle :</td>
+                <td className={tdClass}>
+                  <div className="flex gap-2 flex-wrap">
+                    <Checkbox checked={fiche.usageParcelle === 'residentiel'} label="Résidentiel" />
+                    <Checkbox checked={fiche.usageParcelle === 'commercial'} label="Commercial" />
+                    <Checkbox checked={fiche.usageParcelle === 'mixte'} label="Mixte" />
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          {/* 2. ADRESSAGE */}
+          <SectionHeader num="2" title="ÉTAT DE L'ADRESSAGE PARCELLAIRE" />
+          <table className="w-full text-[11px] border-collapse border border-black mb-1">
+            <tbody>
+              <tr>
+                <td className={`${thClass} w-[44%]`}>La parcelle dispose-t-elle déjà d'une plaque d'identification ?</td>
+                <td className={`${tdClass} w-[56%]`}>
+                  <div className="flex gap-3 flex-wrap">
+                    <Checkbox checked={fiche.plaqueExistante === 'ancienne'} label="Oui - ancienne plaque" />
+                    <Checkbox checked={fiche.plaqueExistante === 'premiere'} label="Non - première plaque" />
+                    <Checkbox checked={fiche.plaqueExistante === 'endommagee'} label="Plaque endommagée" />
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td className={thClass}>Statut du paiement de la plaque :</td>
+                <td className={tdClass}>
+                  <div className="flex gap-3 flex-wrap">
+                    <Checkbox checked={fiche.statutPaiement === 'paye_15000'} label="Payé (15 000 FC)" />
+                    <Checkbox checked={fiche.statutPaiement === 'acompte_7500'} label="Acompte 50% (7 500 FC)" />
+                    <Checkbox checked={fiche.statutPaiement === 'non_paye'} label="Non payé" />
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td className={thClass}>N° du reçu de paiement :</td>
+                <td className={tdClass}>{fiche.recuNo || ''}</td>
+              </tr>
+              <tr>
+                <td className={thClass}>Ménage sensibilisé au projet :</td>
+                <td className={tdClass}>
+                  <div className="flex gap-3 flex-wrap">
+                    <Checkbox checked={fiche.sensibilisation === 'adhere'} label="Oui - adhère au projet" />
+                    <Checkbox checked={fiche.sensibilisation === 'a_relancer'} label="Non - à relancer" />
+                    <Checkbox checked={fiche.sensibilisation === 'reticent'} label="Réticent" />
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          {/* 3. HYGIÈNE */}
+          <SectionHeader num="3" title="HYGIÈNE ET SALUBRITÉ DE LA PARCELLE" />
+          <table className="w-full text-[11px] border-collapse border border-black text-center mb-1">
+            <thead>
+              <tr>
+                <th className="border border-black bg-[#184490] text-white font-bold p-1 text-left w-1/2">Critère d'évaluation</th>
+                <th className="border border-black bg-[#184490] text-white font-bold p-1 w-1/6">Bon</th>
+                <th className="border border-black bg-[#184490] text-white font-bold p-1 w-1/6">Moyen</th>
+                <th className="border border-black bg-[#184490] text-white font-bold p-1 w-1/6">Mauvais</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                { label: "Propreté générale de la parcelle", val: hygiene.proprete },
+                { label: "Gestion des ordures ménagères", val: hygiene.ordures },
+                { label: "Présence de végétation non entretenue", val: hygiene.vegetation },
+                { label: "État sanitaire des latrines / toilettes", val: hygiene.latrines },
+                { label: "Présence d'eaux stagnantes", val: hygiene.eauxStagnantes },
+              ].map((row, idx) => (
+                <tr key={idx} className="bg-white">
+                  <td className="border border-black p-1 text-left text-black">{row.label}</td>
+                  <td className="border border-black p-1"><div className="flex justify-center"><Checkbox checked={row.val === 'bon'} label=""/></div></td>
+                  <td className="border border-black p-1"><div className="flex justify-center"><Checkbox checked={row.val === 'moyen'} label=""/></div></td>
+                  <td className="border border-black p-1"><div className="flex justify-center"><Checkbox checked={row.val === 'mauvais'} label=""/></div></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          {/* 4. DÉCHETS */}
+          <SectionHeader num="4" title="GESTION DES DÉCHETS" />
+          <table className="w-full text-[11px] border-collapse border border-black mb-1">
+            <tbody>
+              <tr>
+                <td className={`${thClass} w-[44%]`}>Mode d'élimination des déchets :</td>
+                <td className={`${tdClass} w-[56%]`}>
+                  <div className="flex gap-2 flex-wrap">
+                    <Checkbox checked={dechets.modeElimination === 'collecte_municipale'} label="Collecte municipale" />
+                    <Checkbox checked={dechets.modeElimination === 'incineration'} label="Brûlage" />
+                    <Checkbox checked={dechets.modeElimination === 'decharge_sauvage'} label="Dépôt sauvage" />
+                    <Checkbox checked={dechets.modeElimination === 'fosse'} label="Fosse" />
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td className={thClass}>Présence d'un bac à ordures :</td>
+                <td className={tdClass}>
+                  <div className="flex gap-3 flex-wrap">
+                    <Checkbox checked={dechets.bacOrdures === 'bon'} label="Oui - en bon état" />
+                    <Checkbox checked={dechets.bacOrdures === 'endommage'} label="Oui - dégradé" />
+                    <Checkbox checked={dechets.bacOrdures === 'aucun'} label="Non" />
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td className={thClass}>Déchets visibles devant la parcelle :</td>
+                <td className={tdClass}>
+                  <div className="flex gap-3 flex-wrap">
+                    <Checkbox checked={dechets.visibles === 'aucun'} label="Aucun" />
+                    <Checkbox checked={dechets.visibles === 'peu'} label="Peu" />
+                    <Checkbox checked={dechets.visibles === 'beaucoup'} label="Beaucoup" />
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          
+          <div className="flex-1"></div> {/* Spacer to push next content */}
+          
+        </div>
+        
+        {/* Page Break for Print */}
+        <div className="no-print h-4 bg-gray-100 border-y border-dashed border-gray-300 w-full mb-4 mt-2"></div>
+        
+        {/* Page 2 Wrap */}
+        <div className="px-4 py-6 md:p-8 print:p-0 print:break-before-page min-h-[277mm] flex flex-col">
+          {isExample && (
+            <div className="mb-2 border-b border-dashed border-black pb-1 text-center text-[9px] font-bold uppercase tracking-wide text-black">
+              Exemple fictif — document non officiel
+            </div>
+          )}
+          
+          {/* 5. FAÇADE */}
+          <div className="break-inside-avoid">
+            <SectionHeader num="5" title="ÉTAT DE LA FAÇADE ET DE LA CLÔTURE" />
+            <table className="w-full text-[11px] border-collapse border border-black mb-1">
+              <tbody>
+                <tr>
+                  <td className={`${thClass} w-[40%]`}>État de la façade de la parcelle :</td>
+                  <td className={`${tdClass} w-[60%]`}>
+                    <div className="flex gap-3 flex-wrap">
+                      <Checkbox checked={facade.etat === 'bonne'} label="Bon état" />
+                      <Checkbox checked={facade.etat === 'degradee'} label="Dégradée" />
+                      <Checkbox checked={facade.etat === 'en_construction'} label="En construction" />
+                      <Checkbox checked={facade.etat === 'inexistante'} label="Inexistante" />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td className={thClass}>Type de clôture :</td>
+                  <td className={tdClass}>
+                    <div className="flex gap-3 flex-wrap">
+                      <Checkbox checked={facade.cloture === 'mur'} label="Mur en dur" />
+                      <Checkbox checked={facade.cloture === 'palissade'} label="Palissade" />
+                      <Checkbox checked={facade.cloture === 'haie'} label="Haie vive" />
+                      <Checkbox checked={facade.cloture === 'aucune'} label="Aucune clôture" />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td className={thClass}>Emplacement idéal pour la plaque :</td>
+                  <td className={tdClass}>
+                    <div className="flex gap-2 items-center flex-wrap">
+                      <Checkbox checked={facade.emplacement === 'portail'} label="Portail" />
+                      <Checkbox checked={facade.emplacement === 'mur_facade'} label="Mur façade" />
+                      <Checkbox checked={facade.emplacement === 'poteau'} label="Poteau" />
+                      <Checkbox checked={facade.emplacement === 'autre'} label="Autre :" />
+                      {facade.emplacement === 'autre' ? (
+                        <span className="border-b border-black flex-1 min-w-[50px] inline-block">{facade.emplacementAutre || ''}</span>
+                      ) : (
+                        <span className="border-b border-black w-16 inline-block"></span>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td className={thClass}>Visibilité de la plaque depuis la rue :</td>
+                  <td className={tdClass}>
+                    <div className="flex gap-3 flex-wrap">
+                      <Checkbox checked={facade.visibilite === 'excellente'} label="Excellente" />
+                      <Checkbox checked={facade.visibilite === 'bonne'} label="Bonne" />
+                      <Checkbox checked={facade.visibilite === 'difficile'} label="Difficile - obstacle signalé" />
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          {/* 6. DRAINAGE */}
+          <div className="break-inside-avoid">
+            <SectionHeader num="6" title="PRÉSENCE ET ÉTAT DES CANAUX DE DRAINAGE" />
+            <table className="w-full text-[11px] border-collapse border border-black mb-1">
+              <tbody>
+                <tr>
+                  <td className={`${thClass} w-[40%]`}>Canal de drainage devant la parcelle :</td>
+                  <td className={`${tdClass} w-[60%]`}>
+                    <div className="flex gap-3 flex-wrap">
+                      <Checkbox checked={drainage.canal === 'present_fonctionnel'} label="Présent et fonctionnel" />
+                      <Checkbox checked={drainage.canal === 'present_obstrue'} label="Présent mais obstrué" />
+                      <Checkbox checked={drainage.canal === 'absent'} label="Absent" />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td className={thClass}>Risque d'érosion ou d'inondation :</td>
+                  <td className={tdClass}>
+                    <div className="flex gap-3 flex-wrap">
+                      <Checkbox checked={drainage.risque === 'aucun'} label="Aucun risque" />
+                      <Checkbox checked={drainage.risque === 'modere'} label="Risque modéré" />
+                      <Checkbox checked={drainage.risque === 'eleve'} label="Risque élevé" />
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          {/* 7. ACTIVITÉS */}
+          <div className="break-inside-avoid">
+            <SectionHeader num="7" title="TYPES D'ACTIVITÉS EXERCÉES SUR LA PARCELLE" />
+            <table className="w-full text-[11px] border-collapse border border-black mb-1 bg-white">
+              <tbody>
+                <tr>
+                  <td className={`${tdClass} w-1/4`}><Checkbox checked={activites.includes('maison_familiale')} label="Habitation familiale" /></td>
+                  <td className={`${tdClass} w-1/4`}><Checkbox checked={activites.includes('boutique_magasin')} label="Commerce / Boutique" /></td>
+                  <td className={`${tdClass} w-1/4`}><Checkbox checked={activites.includes('atelier')} label="Atelier / Artisanat" /></td>
+                  <td className={`${tdClass} w-1/4`}><Checkbox checked={activites.includes('restaurant_bar')} label="Restaurant / Alimentation" /></td>
+                </tr>
+                <tr>
+                  <td className={tdClass}><Checkbox checked={activites.includes('ecole')} label="École / Formation" /></td>
+                  <td className={tdClass}><Checkbox checked={activites.includes('eglise')} label="Église / Lieu de culte" /></td>
+                  <td className={tdClass}><Checkbox checked={activites.includes('sante_pharmacie')} label="Santé / Pharmacie" /></td>
+                  <td className={tdClass}><Checkbox checked={activites.includes('agriculture_elevage')} label="Agriculture / Élevage" /></td>
+                </tr>
+                <tr>
+                  <td className={tdClass}><Checkbox checked={activites.includes('entrepot')} label="Entrepôt / Stockage" /></td>
+                  <td className={tdClass}><Checkbox checked={activites.includes('terrain_vide')} label="Terrain vague / Inoccupé" /></td>
+                  <td className={`${tdClass} font-bold`} colSpan={2}>
+                    <div className="flex items-center gap-1">
+                      <span className="text-[#184490]">Autre activité :</span>
+                      <span className="border-b border-black flex-1 inline-block h-3 font-normal">{/* Autre not stored as string in schema, but we leave line */}</span>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          {/* 8. REMARQUES */}
+          <div className="break-inside-avoid">
+            <SectionHeader num="8" title="REMARQUES ET OBSERVATIONS DE L'AGENT" />
+            <div className="border border-black min-h-[70px] p-2 text-[11px] text-black bg-white whitespace-pre-wrap">
+              {fiche.remarques}
+            </div>
+          </div>
+
+          {/* 9. AVIS DE L'AGENT */}
+          <div className="break-inside-avoid">
+            <SectionHeader num="9" title="AVIS DE L'AGENT DE PROSPECTION" />
+            <table className="w-full text-[11px] border-collapse border border-black mb-2">
+              <tbody>
+                <tr>
+                  <td className={`${thClass} w-[40%]`}>Avis global sur la parcelle :</td>
+                  <td className={`${tdClass} w-[60%]`}>
+                    <div className="flex gap-3 flex-wrap">
+                      <Checkbox checked={avis.global === 'conforme'} label="Conforme - plaque à poser" />
+                      <Checkbox checked={avis.global === 'non_conforme'} label="Non conforme - signalement requis" />
+                      <Checkbox checked={avis.global === 'en_attente'} label="En attente" />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td className={thClass}>Priorité de traitement :</td>
+                  <td className={tdClass}>
+                    <div className="flex gap-3 flex-wrap">
+                      <Checkbox checked={avis.priorite === 'urgente'} label="Urgente (cette semaine)" />
+                      <Checkbox checked={avis.priorite === 'normale'} label="Normale (ce mois)" />
+                      <Checkbox checked={avis.priorite === 'differee'} label="Différée" />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td className={thClass}>Suivi requis :</td>
+                  <td className={tdClass}>
+                    <div className="flex gap-3 flex-wrap">
+                      <Checkbox checked={avis.suivi?.includes('rappel_paiement')} label="Relance paiement" />
+                      <Checkbox checked={avis.suivi?.includes('sensibilisation_supplementaire')} label="Sensibilisation complémentaire" />
+                      <Checkbox checked={avis.suivi?.includes('signalement_incident')} label="Signalement incident" />
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            
+            <div className="bg-[#eaf1f8] border border-black mt-3 p-1.5 px-3 text-center text-[10px] italic text-black font-medium leading-tight shadow-sm">
+              Je soussigné(e), certifie avoir effectué la prospection de la parcelle susmentionnée et que les informations ci-dessus sont exactes et conformes à la réalité constatée sur le terrain.
+            </div>
+
+            <table className="w-full text-[11px] border-collapse border border-black mt-2">
+              <thead>
+                <tr>
+                  <th className="border border-black bg-[#eaf1f8] font-bold p-1 w-1/3 text-black">Propriétaire / Occupant</th>
+                  <th className="border border-black bg-[#eaf1f8] font-bold p-1 w-1/3 text-black">Agent de Prospection</th>
+                  <th className="border border-black bg-[#eaf1f8] font-bold p-1 w-1/3 text-black">Chef de Rue Accompagnateur</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td className="border border-black p-2 align-top h-[90px] relative text-black bg-white">
+                    <div className="flex flex-col gap-2">
+                      <div className="flex"><span>Nom : </span><span className="ml-1 border-b border-black flex-1 truncate">{fiche.proprietaireNom}</span></div>
+                      <div className="flex"><span>Signature : </span><span className="ml-1 flex-1"></span></div>
+                      <div className="absolute bottom-2 left-2 right-2 flex">
+                        <span>Date : </span><span className="ml-1 border-b border-black flex-1 text-center">{format(dateProsp, "dd/MM/yyyy")}</span>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="border border-black p-2 align-top h-[90px] text-black bg-white">
+                    <div className="flex flex-col gap-2">
+                      <div className="flex"><span>Nom : </span><span className="ml-1 border-b border-black flex-1"></span></div>
+                      <div className="flex"><span>Matricule : </span><span className="ml-1 border-b border-black flex-1 truncate">{fiche.agentMatricule}</span></div>
+                      <div className="flex"><span>Signature : </span><span className="ml-1 flex-1"></span></div>
+                    </div>
+                  </td>
+                  <td className="border border-black p-2 align-top h-[90px] text-black bg-white">
+                    <div className="flex flex-col gap-2">
+                      <div className="flex"><span>Nom : </span><span className="ml-1 border-b border-black flex-1 truncate">{fiche.chefRueNom}</span></div>
+                      <div className="flex"><span>Avenue / Rue : </span><span className="ml-1 border-b border-black flex-1 truncate">{fiche.chefRueAvenue}</span></div>
+                      <div className="flex"><span>Signature : </span><span className="ml-1 flex-1"></span></div>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div className="flex-1"></div> {/* Spacer */}
+
+          <div className="text-center mt-6 text-[#184490] font-bold text-[10px] uppercase">
+            COMMUNE DE {fiche.commune} - MAISON COMMUNALE
+          </div>
+          
+        </div>
       </div>
+      </div>
+      
+      {/* Legacy Notes */}
+      {(hygiene.notes || dechets.notes || facade.notes || drainage.notes) && (
+        <div className="max-w-5xl mx-auto mt-8 p-4 bg-muted/50 rounded-lg print:break-before-page print:bg-white print:mt-0">
+          <h4 className="font-bold text-sm mb-2 text-muted-foreground">Notes supplémentaires (anciennes données)</h4>
+          <ul className="text-xs space-y-1">
+            {hygiene.notes && <li><strong>Hygiène:</strong> {hygiene.notes}</li>}
+            {dechets.notes && <li><strong>Déchets:</strong> {dechets.notes}</li>}
+            {facade.notes && <li><strong>Façade:</strong> {facade.notes}</li>}
+            {drainage.notes && <li><strong>Drainage:</strong> {drainage.notes}</li>}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }

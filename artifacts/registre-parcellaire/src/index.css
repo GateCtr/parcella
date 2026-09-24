@@ -175,7 +175,12 @@
   .print-container {
     width: 100% !important;
     max-width: none !important;
+    min-width: 0 !important;
     margin: 0 !important;
+  }
+
+  .print-container > div:not(.no-print) {
+    min-height: 0 !important;
   }
 
   /* Ensure page breaks don't happen inside important data blocks */
@@ -186,6 +191,6 @@
 
   @page {
     size: A4;
-    margin: 1.5cm;
+    margin: 10mm;
   }
 }
