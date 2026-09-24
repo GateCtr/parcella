@@ -14,3 +14,9 @@ La reproduction visuelle du document Word concerne la fiche consultée et imprim
 **Why:** L’utilisateur a choisi explicitement cette portée après avoir demandé une disposition fidèle au document.
 
 **How to apply:** Lors des changements de mise en page, ne pas transformer le formulaire interactif en fac-similé du document imprimable.
+
+Le QR imprimé d’une fiche validée ouvre actuellement le détail réservé aux agents, sans rendre la prospection publique.
+
+**Why:** Le détail contient des données personnelles ; publier simplement son lien dans un QR ne doit pas ouvrir un accès anonyme à ces données.
+
+**How to apply:** Si une vérification par le public est demandée, créer une vue limitée et un identifiant de vérification distinct plutôt que d’exposer la fiche complète.

@@ -10,6 +10,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import React from 'react';
+import { QRCodeSVG } from 'qrcode.react';
 
 const Checkbox = ({ checked, label, className }: { checked: boolean, label: React.ReactNode, className?: string }) => (
   <div className={cn("flex items-start gap-1.5", className)}>
@@ -89,12 +90,15 @@ export default function FicheDetail({ exampleFiche }: { exampleFiche?: Fiche }) 
   const quarter = Math.floor(dateProsp.getMonth() / 3) + 1;
   const year = dateProsp.getFullYear();
   const yearShort = year.toString().slice(2);
+  const ficheUrl = !isExample && fiche.statutFiche === 'validee'
+    ? new URL(`${import.meta.env.BASE_URL}fiches/${encodeURIComponent(fiche.id)}`, window.location.origin).toString()
+    : null;
 
   const tdClass = "border border-black p-1 text-black";
   const thClass = "border border-black bg-[#eaf1f8] font-bold p-1 text-black text-left";
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto pb-20 print:pb-0 font-sans">
+    <div className="space-y-6 max-w-5xl mx-auto pb-20 print:pb-0 print:space-y-0 font-sans">
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between no-print border-b pb-4">
         <div className="flex items-center gap-3">
           <Link href={isExample ? '/' : '/fiches'} aria-label={isExample ? "Retour à l'accueil" : "Retour au registre"} className={cn(buttonVariants({ variant: 'outline', size: 'icon' }), "h-10 w-10 shrink-0")}>
@@ -202,19 +206,19 @@ export default function FicheDetail({ exampleFiche }: { exampleFiche?: Fiche }) 
             </div>
           </div>
           
-          <div className="flex justify-between items-end mb-2 text-[11px] font-bold text-[#184490]">
-            <div className="flex items-center gap-1">
-              <span>N° Fiche :</span>
-              <span className="border-b border-black w-14 text-center text-black font-normal">{fiche.ficheNo}</span>
-              <span>/ 20{yearShort}</span>
-            </div>
-            
-            <div className="flex items-center gap-1 mb-1">
-              <span>Date :</span>
-              <span className="border-b border-black w-24 text-center text-black font-normal">{format(dateProsp, "dd/MM/yyyy")}</span>
-            </div>
-            
-            <div className="border border-black flex flex-col w-48 shadow-sm">
+           <div className="grid grid-cols-[minmax(0,1fr)_12rem_6.5rem] items-start gap-2 mb-2 text-[11px] font-bold text-[#184490]">
+             <div className="flex flex-wrap items-start gap-x-4 gap-y-2 pt-1">
+               <div className="flex items-baseline gap-1 whitespace-nowrap">
+                 <span>N° Fiche :</span>
+                 <span className="border-b border-black min-w-24 text-center text-[10px] text-black font-normal">{fiche.ficheNo}</span>
+               </div>
+               <div className="flex items-baseline gap-1 whitespace-nowrap">
+                 <span>Date :</span>
+                 <span className="border-b border-black min-w-20 text-center text-black font-normal">{format(dateProsp, "dd/MM/yyyy")}</span>
+               </div>
+             </div>
+             
+             <div className="border border-black flex flex-col w-full">
               <div className="text-center font-bold text-[#184490] border-b border-black bg-[#eaf1f8] text-[9px] py-0.5 uppercase tracking-wide">PÉRIODE :</div>
               <div className="bg-[#eaf1f8] p-1 pb-1.5 flex flex-col text-[9px] font-normal text-black">
                  <div className="flex justify-between px-1">
@@ -229,8 +233,22 @@ export default function FicheDetail({ exampleFiche }: { exampleFiche?: Fiche }) 
               </div>
             </div>
             
-            <div className="border border-black w-24 h-14 flex items-center justify-center text-gray-400 text-[9px] italic bg-white shrink-0">
-              [ QR CODE ]
+             <div className="border border-black w-[6.5rem] h-[6.5rem] flex flex-col items-center justify-center bg-white text-center text-[9px] text-gray-500">
+               {ficheUrl ? (
+                 <>
+                   <QRCodeSVG
+                     value={ficheUrl}
+                     size={76}
+                     level="M"
+                     bgColor="#ffffff"
+                     fgColor="#000000"
+                     title={`Ouvrir la fiche validée ${fiche.ficheNo} (connexion requise)`}
+                   />
+                   <span className="text-[7px] leading-none mt-1 text-black">Fiche validée · accès réservé</span>
+                 </>
+               ) : (
+                 <span className="italic">{isExample ? 'Exemple — sans QR' : 'QR après validation'}</span>
+               )}
             </div>
           </div>
 
