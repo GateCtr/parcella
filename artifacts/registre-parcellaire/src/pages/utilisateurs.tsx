@@ -38,13 +38,14 @@ import {
 } from '@/components/ui/select';
 import { DataSpinner } from '@/components/data-spinner';
 import { useToast } from '@/hooks/use-toast';
-import { UserPlus, KeyRound, RefreshCw, AlertCircle } from 'lucide-react';
+import { UserPlus, RefreshCw, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export default function Utilisateurs() {
   const { data: users, isLoading } = useListUsers({
     query: { queryKey: getListUsersQueryKey() },
   });
+  type ListedUser = NonNullable<typeof users>[number];
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -106,21 +107,42 @@ export default function Utilisateurs() {
     setNewCode(null);
   };
 
-  const formatRole = (role: string) => {
-    switch (role) {
-      case 'admin_principal': return 'Admin Principal';
-      case 'validateur': return 'Validateur';
-      case 'agent': return 'Agent Terrain';
-      default: return role;
+  const roleControl = (user: ListedUser, mobile = false) => {
+    if (user.role === 'admin_principal') {
+      return (
+        <span className="inline-flex items-center rounded-full border bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
+          Admin principal
+        </span>
+      );
     }
+
+    return (
+      <Select
+        value={user.role}
+        onValueChange={(role) => handleUpdateRole(user.id, role)}
+        disabled={updateMutation.isPending}
+      >
+        <SelectTrigger
+          id={mobile ? `role-mobile-${user.id}` : undefined}
+          aria-label={`Rôle de ${user.email}`}
+          className={mobile ? 'w-full min-w-0' : 'h-8 w-[180px] text-xs'}
+        >
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="agent">Agent Terrain</SelectItem>
+          <SelectItem value="validateur">Validateur</SelectItem>
+        </SelectContent>
+      </Select>
+    );
   };
 
   if (isLoading) return <DataSpinner label="Chargement des utilisateurs..." />;
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6 pb-16">
-      <div className="flex items-center justify-between">
-        <div>
+    <div className="mx-auto w-full min-w-0 max-w-5xl space-y-5 pb-16 sm:space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
           <h1 className="text-2xl font-bold tracking-tight">Utilisateurs</h1>
           <p className="mt-2 text-sm text-muted-foreground">
             Gérez les accès, les rôles et les codes d'authentification des agents.
@@ -138,12 +160,12 @@ export default function Utilisateurs() {
           }
         }}>
           <DialogTrigger asChild>
-            <Button>
+            <Button className="w-full sm:w-auto">
               <UserPlus className="mr-2 h-4 w-4" />
               Nouvel utilisateur
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-h-[calc(100dvh-2rem)] w-[calc(100vw-2rem)] overflow-y-auto sm:max-w-lg">
             <DialogHeader>
               <DialogTitle>Créer un utilisateur</DialogTitle>
               <DialogDescription>
@@ -158,7 +180,7 @@ export default function Utilisateurs() {
                   <AlertTitle className="text-amber-900">Code généré avec succès</AlertTitle>
                   <AlertDescription className="text-amber-800 mt-2">
                     Copiez ce code d'accès immédiatement. Il ne sera plus affiché après la fermeture de cette fenêtre.
-                    <div className="mt-3 p-3 bg-white border border-amber-200 rounded font-mono text-center text-lg font-bold text-black tracking-widest select-all break-all">
+                    <div className="mt-3 select-all break-all rounded border border-amber-200 bg-white p-3 text-center font-mono text-sm font-bold text-black sm:text-base">
                       {newCode}
                     </div>
                   </AlertDescription>
@@ -209,7 +231,7 @@ export default function Utilisateurs() {
           <AlertTitle className="text-amber-900">Nouveau code d'accès</AlertTitle>
           <AlertDescription className="text-amber-800 mt-2">
             Veuillez copier ce code. Il ne sera plus affiché par la suite.
-            <div className="mt-3 p-3 bg-white border border-amber-200 rounded font-mono text-center text-lg font-bold text-black tracking-widest select-all break-all">
+            <div className="mt-3 select-all break-all rounded border border-amber-200 bg-white p-3 text-center font-mono text-sm font-bold text-black sm:text-base">
               {newCode}
             </div>
           </AlertDescription>
@@ -219,8 +241,63 @@ export default function Utilisateurs() {
         </Alert>
       )}
 
-      <div className="rounded-md border overflow-x-auto">
-        <Table className="min-w-[600px]">
+      <div className="grid gap-3 sm:grid-cols-2 xl:hidden">
+        {users?.map((user) => {
+          const isPrincipal = user.role === 'admin_principal';
+          return (
+            <article key={user.id} className="min-w-0 rounded-xl border bg-card p-4 shadow-sm">
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-muted-foreground">Adresse e-mail</p>
+                <p className="mt-1 break-all text-sm font-semibold leading-snug">{user.email}</p>
+              </div>
+
+              <div className="mt-4 grid gap-4 border-t pt-4">
+                <div className="min-w-0">
+                  {isPrincipal ? (
+                    <p className="mb-2 text-xs font-medium text-muted-foreground">Rôle</p>
+                  ) : (
+                    <Label htmlFor={`role-mobile-${user.id}`} className="mb-2 block text-xs text-muted-foreground">
+                      Rôle
+                    </Label>
+                  )}
+                  {roleControl(user, true)}
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-xs font-medium text-muted-foreground">Créé le</span>
+                  <span className="text-sm">{format(new Date(user.createdAt), 'dd MMM yyyy', { locale: fr })}</span>
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <Label htmlFor={`active-mobile-${user.id}`} className="text-sm">Compte actif</Label>
+                  <Switch
+                    id={`active-mobile-${user.id}`}
+                    checked={user.active}
+                    onCheckedChange={(active) => handleUpdateActive(user.id, active)}
+                    disabled={isPrincipal || updateMutation.isPending}
+                  />
+                </div>
+              </div>
+
+              <Button
+                variant="outline"
+                className="mt-4 w-full"
+                onClick={() => handleRotate(user.id)}
+                disabled={isPrincipal || rotateMutation.isPending}
+              >
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Nouveau code
+              </Button>
+            </article>
+          );
+        })}
+        {(!users || users.length === 0) && (
+          <p className="rounded-xl border bg-card p-8 text-center text-sm text-muted-foreground sm:col-span-2">
+            Aucun utilisateur trouvé.
+          </p>
+        )}
+      </div>
+
+      <div className="hidden overflow-x-auto rounded-md border xl:block">
+        <Table className="min-w-[700px]">
           <TableHeader>
             <TableRow>
               <TableHead>Email</TableHead>
@@ -235,33 +312,14 @@ export default function Utilisateurs() {
               const isPrincipal = u.role === 'admin_principal';
               return (
                 <TableRow key={u.id}>
-                  <TableCell className="font-medium">{u.email}</TableCell>
-                  <TableCell>
-                    {isPrincipal ? (
-                      <span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold bg-primary/10 text-primary">
-                        Admin Principal
-                      </span>
-                    ) : (
-                      <Select
-                        value={u.role}
-                        onValueChange={(val) => handleUpdateRole(u.id, val)}
-                        disabled={updateMutation.isPending}
-                      >
-                        <SelectTrigger className="w-[180px] h-8 text-xs">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="agent">Agent Terrain</SelectItem>
-                          <SelectItem value="validateur">Validateur</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    )}
-                  </TableCell>
+                  <TableCell className="break-all font-medium">{u.email}</TableCell>
+                  <TableCell>{roleControl(u)}</TableCell>
                   <TableCell className="text-muted-foreground text-sm whitespace-nowrap">
                     {format(new Date(u.createdAt), 'dd MMM yyyy', { locale: fr })}
                   </TableCell>
                   <TableCell>
                     <Switch
+                      aria-label={`Compte actif : ${u.email}`}
                       checked={u.active}
                       onCheckedChange={(val) => handleUpdateActive(u.id, val)}
                       disabled={isPrincipal || updateMutation.isPending}
