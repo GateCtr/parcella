@@ -31,6 +31,7 @@ export const fichesTable = pgTable(
     dateProspection: date("date_prospection", { mode: "string" }).notNull(),
     commune: text("commune").notNull(),
     quartier: text("quartier").notNull(),
+    localite: text("localite"),
     avenue: text("avenue").notNull(),
     parcelleNo: text("parcelle_no").notNull(),
     plaqueNo: text("plaque_no"),

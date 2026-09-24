@@ -25,6 +25,7 @@ import { CustomRadioGroup, CustomMultiSelect, CustomSelect } from '@/components/
 const ficheSchema = z.object({
   commune: z.string().min(1, 'Requis'),
   quartier: z.string().min(1, 'Requis'),
+  localite: z.string().max(120, '120 caractères maximum').optional(),
   avenue: z.string().min(1, 'Requis'),
   parcelleNo: z.string().min(1, 'Requis'),
   plaqueNo: z.string().optional(),
@@ -114,7 +115,7 @@ export default function FicheNew() {
   const form = useForm<FicheFormValues>({
     resolver: zodResolver(ficheSchema),
     defaultValues: {
-      commune: '', quartier: '', avenue: '', parcelleNo: '', plaqueNo: '',
+      commune: '', quartier: '', localite: '', avenue: '', parcelleNo: '', plaqueNo: '',
       proprietaireNom: '', telephone: '', typeOccupation: '', usageParcelle: '',
       superficie: '' as any,
       plaqueExistante: '', statutPaiement: '', recuNo: '', sensibilisation: '',
@@ -135,7 +136,7 @@ export default function FicheNew() {
   const nextStep = async () => {
     if (isCheckingDuplicate) return;
     let fieldsToValidate: (keyof FicheFormValues)[] = [];
-    if (step === 0) fieldsToValidate = ['commune', 'quartier', 'avenue', 'parcelleNo', 'proprietaireNom', 'telephone', 'typeOccupation', 'usageParcelle', 'superficie'];
+    if (step === 0) fieldsToValidate = ['commune', 'quartier', 'localite', 'avenue', 'parcelleNo', 'proprietaireNom', 'telephone', 'typeOccupation', 'usageParcelle', 'superficie'];
     if (step === 1) fieldsToValidate = ['plaqueExistante', 'statutPaiement', 'recuNo', 'sensibilisation'];
     if (step === 2) fieldsToValidate = ['hygiene_proprete', 'hygiene_ordures', 'hygiene_vegetation', 'hygiene_latrines', 'hygiene_eauxStagnantes'];
     if (step === 3) fieldsToValidate = ['dechets_modeElimination', 'dechets_bacOrdures', 'dechets_visibles'];
@@ -191,7 +192,7 @@ export default function FicheNew() {
 
   const onInvalid = (errors: FieldErrors<FicheFormValues>) => {
     const fieldsByStep: (keyof FicheFormValues)[][] = [
-      ['commune', 'quartier', 'avenue', 'parcelleNo', 'proprietaireNom', 'telephone', 'typeOccupation', 'usageParcelle', 'superficie'],
+      ['commune', 'quartier', 'localite', 'avenue', 'parcelleNo', 'proprietaireNom', 'telephone', 'typeOccupation', 'usageParcelle', 'superficie'],
       ['plaqueExistante', 'statutPaiement', 'sensibilisation'],
       ['hygiene_proprete', 'hygiene_ordures', 'hygiene_vegetation', 'hygiene_latrines', 'hygiene_eauxStagnantes'],
       ['dechets_modeElimination', 'dechets_bacOrdures', 'dechets_visibles'],
@@ -210,6 +211,7 @@ export default function FicheNew() {
     const input: FicheInput = {
       commune: data.commune,
       quartier: data.quartier,
+      localite: data.localite?.trim() || null,
       avenue: data.avenue,
       parcelleNo: data.parcelleNo,
       plaqueNo: data.plaqueNo,
@@ -348,6 +350,13 @@ export default function FicheNew() {
                       </FormItem>
                     )} />
                   </div>
+                  <FormField control={form.control} name="localite" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-base font-semibold">Localité (ligne LO/ de la plaque)</FormLabel>
+                      <FormControl><Input className="h-12" placeholder="Ex. Foire Agricole — ne pas répéter le quartier" maxLength={120} {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <FormField control={form.control} name="avenue" render={({ field }) => (
                       <FormItem className="md:col-span-2">

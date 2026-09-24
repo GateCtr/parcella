@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { PlaquePreview } from '@/components/plaque-preview';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { LocaliteEditor } from '@/components/localite-editor';
 
 export default function FichePlaque() {
   const { id } = useParams();
@@ -31,7 +32,13 @@ export default function FichePlaque() {
   const fichePlaques = plaques?.filter(p => p.ficheId === id).sort((a, b) => b.version - a.version);
   const latestPlaque = fichePlaques?.[0];
   const hasSvg = Boolean(latestPlaque?.svg);
-  const legacyPlaque = Boolean(hasSvg && latestPlaque && !latestPlaque.svg.includes('id="plaque-layout-v5"'));
+  const addressKey = encodeURIComponent(JSON.stringify([
+    fiche.parcelleNo, fiche.avenue, fiche.localite ?? '', fiche.quartier, fiche.commune,
+  ])).replace(/'/g, '%27');
+  const legacyPlaque = Boolean(hasSvg && latestPlaque && (
+    !latestPlaque.svg.includes('id="plaque-layout-v6"')
+    || !latestPlaque.svg.includes(`data-address-key="${addressKey}"`)
+  ));
 
   const handleGenerate = () => {
     generatePlaque.mutate({ id: fiche.id }, {
@@ -124,6 +131,8 @@ export default function FichePlaque() {
         </div>
       </div>
 
+      <LocaliteEditor fiche={fiche} />
+
       {fiche.statutFiche === 'validee' && hasSvg && !legacyPlaque && (
         <p className="no-print text-sm text-muted-foreground">
           PDF : choisissez « Enregistrer au format PDF » dans la fenêtre d’impression. Pour une imprimerie ou un grand format, téléchargez le SVG vectoriel, qui reste net à toute taille.
@@ -134,7 +143,7 @@ export default function FichePlaque() {
          <Alert className="no-print">
            <AlertCircle className="h-4 w-4" />
            <AlertTitle>Ancien modèle de plaque</AlertTitle>
-           <AlertDescription>Cette plaque utilise l’ancien dessin. Actualisez-la pour créer une nouvelle version conforme au modèle fourni.</AlertDescription>
+            <AlertDescription>Cette plaque utilise un ancien dessin ou une ancienne adresse. Actualisez-la pour créer une nouvelle version avec la localité et la taille de texte corrigées.</AlertDescription>
          </Alert>
        )}
        {!hasSvg && fiche.statutFiche === 'validee' && (
@@ -160,6 +169,7 @@ export default function FichePlaque() {
           <PlaquePreview
             parcelleNo={fiche.parcelleNo}
             avenue={fiche.avenue}
+            localite={fiche.localite}
             quartier={fiche.quartier}
             commune={fiche.commune}
             isFictive={false}

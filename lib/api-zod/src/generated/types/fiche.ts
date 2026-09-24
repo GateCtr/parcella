@@ -18,6 +18,8 @@ export interface Fiche {
   ficheNo: string;
   commune: string;
   quartier: string;
+  /** @nullable */
+  localite: string | null;
   avenue: string;
   parcelleNo: string;
   /** @nullable */

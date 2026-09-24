@@ -14,6 +14,8 @@ import {
   MarkPlaquePrintedParams,
   UpdateFicheBody,
   UpdateFicheParams,
+  UpdateFicheLocaliteBody,
+  UpdateFicheLocaliteParams,
 } from "@workspace/api-zod";
 import { decrypt, encrypt } from "../lib/crypto";
 import { plaqueSvg } from "../lib/plaque-svg";
@@ -86,6 +88,28 @@ router.patch("/fiches/:id", async (req, res): Promise<void> => {
   res.json(publicFiche(row));
 });
 
+router.patch("/fiches/:id/localite", async (req, res): Promise<void> => {
+  const params = UpdateFicheLocaliteParams.safeParse(req.params);
+  const body = UpdateFicheLocaliteBody.safeParse(req.body);
+  if (!params.success || !body.success) { res.status(400).json({ error: "Localité invalide" }); return; }
+  const [before] = await db.select().from(fichesTable).where(eq(fichesTable.id, params.data.id));
+  if (!before) { res.status(404).json({ error: "Fiche introuvable" }); return; }
+  const localite = body.data.localite?.trim() || null;
+  if (before.localite === localite) { res.json(publicFiche(before)); return; }
+  const [row] = await db.update(fichesTable).set({
+    localite,
+    statutPlaque: before.statutPlaque === "non_generee" ? "non_generee" : "a_reimprimer",
+  }).where(eq(fichesTable.id, params.data.id)).returning();
+  await db.insert(auditTable).values({
+    utilisateurId: userId(req)!,
+    action: "MODIFICATION_LOCALITE",
+    ficheId: row.id,
+    donneesAvant: { localite: before.localite },
+    donneesApres: { localite },
+  });
+  res.json(publicFiche(row));
+});
+
 router.post("/fiches/:id/decision", async (req, res): Promise<void> => {
   const p=DecideFicheParams.safeParse(req.params); const b=DecideFicheBody.safeParse(req.body);
   if(!p.success||!b.success){res.status(400).json({error:"Décision invalide"});return;}
@@ -101,14 +125,15 @@ router.post("/fiches/:id/plaque", async (req,res):Promise<void>=>{
   if(!f){res.status(404).json({error:"Fiche introuvable"});return;}
   if(f.statutFiche!=="validee"){res.status(409).json({error:"La fiche doit être validée"});return;}
   const existing=await db.select().from(plaquesTable).where(eq(plaquesTable.ficheId,f.id)).orderBy(desc(plaquesTable.version));
-  if(existing.length&&["generee","a_reimprimer"].includes(f.statutPlaque)&&existing[0].svg.includes('id="plaque-layout-v5"')){res.status(409).json({error:"Plaque déjà générée"});return;}
   const version=(existing[0]?.version??0)+1; const plaqueNo=f.plaqueNo??`${code(f.commune)}-${f.parcelleNo}`;
   const domain = process.env.REPLIT_DOMAINS?.split(",")[0]?.trim();
   const host = domain || req.get("host");
   if (!host) { res.status(503).json({error:"Domaine de la fiche indisponible"}); return; }
   const origin = host.startsWith("localhost") ? `http://${host}` : `https://${host}`;
   const ficheUrl = new URL(`/fiches/${encodeURIComponent(f.id)}`, origin).toString();
-  const svg=plaqueSvg(f,plaqueNo,ficheUrl); const [plaque]=await db.insert(plaquesTable).values({ficheId:f.id,version,svg}).returning();
+  const svg=plaqueSvg(f,plaqueNo,ficheUrl);
+  if (existing[0]?.svg === svg) { res.status(409).json({error:"Plaque déjà générée"}); return; }
+  const [plaque]=await db.insert(plaquesTable).values({ficheId:f.id,version,svg}).returning();
   const statut=existing.length?"a_reimprimer":"generee"; await db.update(fichesTable).set({plaqueNo,statutPlaque:statut}).where(eq(fichesTable.id,f.id));
   res.status(201).json({id:plaque.id,ficheId:f.id,ficheNo:f.ficheNo,commune:f.commune,quartier:f.quartier,avenue:f.avenue,plaqueNo,version,statut,svg,genereLe:plaque.genereLe.toISOString(),imprimeLe:null});
 });

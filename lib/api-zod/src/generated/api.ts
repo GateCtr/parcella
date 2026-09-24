@@ -53,6 +53,7 @@ export const ListFichesResponseItem = zod.object({
   "ficheNo": zod.string(),
   "commune": zod.string(),
   "quartier": zod.string(),
+  "localite": zod.string().nullable(),
   "avenue": zod.string(),
   "parcelleNo": zod.string(),
   "plaqueNo": zod.string().nullish(),
@@ -85,6 +86,8 @@ export const ListFichesResponse = zod.array(ListFichesResponseItem)
 
 
 
+export const createFicheBodyLocaliteMax = 120;
+
 
 
 
@@ -94,6 +97,7 @@ export const ListFichesResponse = zod.array(ListFichesResponseItem)
 export const CreateFicheBody = zod.object({
   "commune": zod.string().min(1),
   "quartier": zod.string().min(1),
+  "localite": zod.string().max(createFicheBodyLocaliteMax).nullish(),
   "avenue": zod.string().min(1),
   "parcelleNo": zod.string().min(1),
   "plaqueNo": zod.string().optional(),
@@ -124,6 +128,7 @@ export const CreateFicheResponse = zod.object({
   "ficheNo": zod.string(),
   "commune": zod.string(),
   "quartier": zod.string(),
+  "localite": zod.string().nullable(),
   "avenue": zod.string(),
   "parcelleNo": zod.string(),
   "plaqueNo": zod.string().nullish(),
@@ -167,6 +172,7 @@ export const CheckFicheDuplicateResponse = zod.object({
   "ficheNo": zod.string(),
   "commune": zod.string(),
   "quartier": zod.string(),
+  "localite": zod.string().nullable(),
   "avenue": zod.string(),
   "parcelleNo": zod.string(),
   "plaqueNo": zod.string().nullish(),
@@ -206,6 +212,7 @@ export const GetFicheResponse = zod.object({
   "ficheNo": zod.string(),
   "commune": zod.string(),
   "quartier": zod.string(),
+  "localite": zod.string().nullable(),
   "avenue": zod.string(),
   "parcelleNo": zod.string(),
   "plaqueNo": zod.string().nullish(),
@@ -241,6 +248,8 @@ export const UpdateFicheParams = zod.object({
 
 
 
+export const updateFicheBodyOneLocaliteMax = 120;
+
 
 
 
@@ -250,6 +259,7 @@ export const UpdateFicheParams = zod.object({
 export const UpdateFicheBody = zod.object({
   "commune": zod.string().min(1),
   "quartier": zod.string().min(1),
+  "localite": zod.string().max(updateFicheBodyOneLocaliteMax).nullish(),
   "avenue": zod.string().min(1),
   "parcelleNo": zod.string().min(1),
   "plaqueNo": zod.string().optional(),
@@ -280,6 +290,54 @@ export const UpdateFicheResponse = zod.object({
   "ficheNo": zod.string(),
   "commune": zod.string(),
   "quartier": zod.string(),
+  "localite": zod.string().nullable(),
+  "avenue": zod.string(),
+  "parcelleNo": zod.string(),
+  "plaqueNo": zod.string().nullish(),
+  "proprietaireNom": zod.string(),
+  "telephone": zod.string(),
+  "typeOccupation": zod.string(),
+  "superficie": zod.number().nullish(),
+  "usageParcelle": zod.string(),
+  "plaqueExistante": zod.string().nullish(),
+  "statutPaiement": zod.string().nullish(),
+  "recuNo": zod.string().nullish(),
+  "sensibilisation": zod.string().nullish(),
+  "hygiene": zod.record(zod.string(), zod.unknown()).optional(),
+  "dechets": zod.record(zod.string(), zod.unknown()).optional(),
+  "facade": zod.record(zod.string(), zod.unknown()).optional(),
+  "drainage": zod.record(zod.string(), zod.unknown()).optional(),
+  "activites": zod.array(zod.string()).optional(),
+  "remarques": zod.string().nullish(),
+  "avis": zod.record(zod.string(), zod.unknown()).optional(),
+  "agentMatricule": zod.string().nullish(),
+  "chefRueNom": zod.string().nullish(),
+  "chefRueAvenue": zod.string().nullish(),
+  "statutFiche": zod.enum(['brouillon', 'soumise', 'validee', 'rejetee']),
+  "statutPlaque": zod.enum(['non_generee', 'generee', 'a_reimprimer', 'imprimee']),
+  "dateProspection": zod.coerce.date(),
+  "createdAt": zod.coerce.date()
+})
+
+
+export const UpdateFicheLocaliteParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const updateFicheLocaliteBodyLocaliteMax = 120;
+
+
+
+export const UpdateFicheLocaliteBody = zod.object({
+  "localite": zod.string().max(updateFicheLocaliteBodyLocaliteMax).nullable()
+})
+
+export const UpdateFicheLocaliteResponse = zod.object({
+  "id": zod.string().uuid(),
+  "ficheNo": zod.string(),
+  "commune": zod.string(),
+  "quartier": zod.string(),
+  "localite": zod.string().nullable(),
   "avenue": zod.string(),
   "parcelleNo": zod.string(),
   "plaqueNo": zod.string().nullish(),
@@ -323,6 +381,7 @@ export const DecideFicheResponse = zod.object({
   "ficheNo": zod.string(),
   "commune": zod.string(),
   "quartier": zod.string(),
+  "localite": zod.string().nullable(),
   "avenue": zod.string(),
   "parcelleNo": zod.string(),
   "plaqueNo": zod.string().nullish(),

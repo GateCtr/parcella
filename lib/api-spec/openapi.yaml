@@ -154,6 +154,25 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Fiche"
+  /fiches/{id}/localite:
+    patch:
+      operationId: updateFicheLocalite
+      tags: [fiches]
+      parameters:
+        - $ref: "#/components/parameters/FicheId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FicheLocaliteInput"
+      responses:
+        "200":
+          description: Localité mise à jour
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Fiche"
   /fiches/{id}/decision:
     post:
       operationId: decideFiche
@@ -245,12 +264,13 @@ components:
         nom: { type: string }
     Fiche:
       type: object
-      required: [id, ficheNo, commune, quartier, avenue, parcelleNo, proprietaireNom, telephone, typeOccupation, usageParcelle, statutFiche, statutPlaque, dateProspection, createdAt]
+      required: [id, ficheNo, commune, quartier, localite, avenue, parcelleNo, proprietaireNom, telephone, typeOccupation, usageParcelle, statutFiche, statutPlaque, dateProspection, createdAt]
       properties:
         id: { type: string, format: uuid }
         ficheNo: { type: string }
         commune: { type: string }
         quartier: { type: string }
+        localite: { type: ["string", "null"] }
         avenue: { type: string }
         parcelleNo: { type: string }
         plaqueNo: { type: ["string", "null"] }
@@ -285,6 +305,7 @@ components:
       properties:
         commune: { type: string, minLength: 1 }
         quartier: { type: string, minLength: 1 }
+        localite: { type: ["string", "null"], maxLength: 120 }
         avenue: { type: string, minLength: 1 }
         parcelleNo: { type: string, minLength: 1 }
         plaqueNo: { type: string }
@@ -313,6 +334,11 @@ components:
     FicheUpdate:
       allOf:
         - $ref: "#/components/schemas/FicheInput"
+    FicheLocaliteInput:
+      type: object
+      required: [localite]
+      properties:
+        localite: { type: ["string", "null"], maxLength: 120 }
     FicheDecision:
       type: object
       required: [decision]

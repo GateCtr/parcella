@@ -26,6 +26,7 @@ export * from './ficheInputDechets';
 export * from './ficheInputDrainage';
 export * from './ficheInputFacade';
 export * from './ficheInputHygiene';
+export * from './ficheLocaliteInput';
 export * from './ficheStatutFiche';
 export * from './ficheStatutPlaque';
 export * from './ficheUpdate';

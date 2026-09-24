@@ -7,7 +7,7 @@ La ligne « LO/ » du modèle photographié ne doit pas être remplie en recopia
 
 **Why:** Le modèle distingue localité, quartier et commune ; substituer un autre champ attribuerait une fausse adresse à une plaque.
 
-**How to apply:** Ajouter un champ de localité explicite si cette ligne doit figurer sur toutes les plaques, avec une valeur facultative pour les anciennes fiches.
+**How to apply:** Utiliser uniquement la localité propre à la fiche. Les anciennes fiches sans localité doivent rester identifiables comme incomplètes ; « Foire Agricole » appartient seulement au modèle fictif et ne doit pas être copiée ailleurs.
 
 Dans Chromium, l'attribution d'une page CSS nommée à un élément interne de la plaque a produit une seconde page blanche, même quand l'image tenait sur une feuille.
 

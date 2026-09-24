@@ -16,6 +16,11 @@ export interface FicheInput {
   commune: string;
   /** @minLength 1 */
   quartier: string;
+  /**
+     * @maxLength 120
+     * @nullable
+     */
+  localite?: string | null;
   /** @minLength 1 */
   avenue: string;
   /** @minLength 1 */

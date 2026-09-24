@@ -7,6 +7,7 @@ const exampleFiche: Fiche = {
   ficheNo: 'EXEMPLE',
   commune: 'Gombe',
   quartier: 'Exemple de quartier',
+  localite: null,
   avenue: 'Avenue Exemple',
   parcelleNo: '00',
   plaqueNo: 'EX-000',

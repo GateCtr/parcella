@@ -4,13 +4,14 @@ import { QRCodeSVG } from 'qrcode.react';
 interface PlaquePreviewProps {
   parcelleNo: string;
   avenue: string;
+  localite?: string | null;
   quartier: string;
   commune: string;
   qrValue?: string;
   isFictive?: boolean;
 }
 
-export function PlaquePreview({ parcelleNo, avenue, quartier, commune, qrValue, isFictive }: PlaquePreviewProps) {
+export function PlaquePreview({ parcelleNo, avenue, localite, quartier, commune, qrValue, isFictive }: PlaquePreviewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
 
@@ -71,16 +72,17 @@ export function PlaquePreview({ parcelleNo, avenue, quartier, commune, qrValue, 
             </div>
 
             {/* Centre : Numéro de parcelle */}
-            <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center">
-              <div className="text-[220px] font-black text-[#0a1f5c] tracking-tighter leading-none font-sans drop-shadow-sm mt-8">
+             <div className="absolute inset-x-0 top-[120px] pointer-events-none flex justify-center">
+               <div className="text-[210px] font-black text-[#0a1f5c] tracking-tighter leading-none font-sans drop-shadow-sm">
                 {parcelleNo}
               </div>
             </div>
 
             {/* Pied de page : Adresse et QR */}
             <div className="flex justify-between items-end z-10 relative">
-              <div className="flex flex-col gap-1.5 text-[34px] font-extrabold text-[#0a1f5c] uppercase tracking-wider leading-[1.1]">
+               <div className="flex flex-col gap-1 text-[38px] font-extrabold text-[#0a1f5c] uppercase tracking-tight leading-[1.05]">
                 <div>AV. {avenue}</div>
+                 <div>LO/ {localite?.trim() || '—'}</div>
                 <div>Q/ {quartier}</div>
                 <div>C/ {commune}</div>
               </div>

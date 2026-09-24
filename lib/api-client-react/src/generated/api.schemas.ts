@@ -49,6 +49,8 @@ export interface Fiche {
   ficheNo: string;
   commune: string;
   quartier: string;
+  /** @nullable */
+  localite: string | null;
   avenue: string;
   parcelleNo: string;
   /** @nullable */
@@ -102,6 +104,11 @@ export interface FicheInput {
   commune: string;
   /** @minLength 1 */
   quartier: string;
+  /**
+     * @maxLength 120
+     * @nullable
+     */
+  localite?: string | null;
   /** @minLength 1 */
   avenue: string;
   /** @minLength 1 */
@@ -132,6 +139,14 @@ export interface FicheInput {
 }
 
 export type FicheUpdate = FicheInput;
+
+export interface FicheLocaliteInput {
+  /**
+     * @maxLength 120
+     * @nullable
+     */
+  localite: string | null;
+}
 
 export type FicheDecisionDecision = typeof FicheDecisionDecision[keyof typeof FicheDecisionDecision];
 

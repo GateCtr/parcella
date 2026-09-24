@@ -18,7 +18,7 @@ const module = { exports: {} };
 new Function("require", "module", "exports", source)(createRequire(import.meta.url), module, module.exports);
 const { plaqueSvg } = module.exports;
 const example = plaqueSvg(
-  { parcelleNo: "14", avenue: "Tshela", quartier: "Mama Yemo", commune: "Mont-Ngafula" },
+  { parcelleNo: "14", avenue: "Tshela", localite: "Foire Agricole", quartier: "Mama Yemo", commune: "Mont-Ngafula" },
   "EXEMPLE",
   "EXEMPLE FICTIF",
 );
