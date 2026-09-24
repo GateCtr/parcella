@@ -31,7 +31,7 @@ export default function FichePlaque() {
   const fichePlaques = plaques?.filter(p => p.ficheId === id).sort((a, b) => b.version - a.version);
   const latestPlaque = fichePlaques?.[0];
   const hasSvg = Boolean(latestPlaque?.svg);
-  const legacyPlaque = Boolean(hasSvg && latestPlaque && !latestPlaque.svg.includes('id="plaque-layout-v4"'));
+  const legacyPlaque = Boolean(hasSvg && latestPlaque && !latestPlaque.svg.includes('id="plaque-layout-v5"'));
 
   const handleGenerate = () => {
     generatePlaque.mutate({ id: fiche.id }, {
