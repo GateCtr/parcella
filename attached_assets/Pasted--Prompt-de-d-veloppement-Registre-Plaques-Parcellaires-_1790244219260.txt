@@ -1,0 +1,139 @@
+# Prompt de développement — Registre & Plaques Parcellaires (Commune de Mont-Ngafula)
+
+> À copier-coller tel quel dans un outil capable de générer et déployer une application complète (Claude Code, Lovable, Bolt.new, v0.dev, Replit Agent, Cursor, etc.). Il décrit un vrai projet full-stack avec base de données, authentification et chiffrement — pas un prototype statique.
+
+---
+
+## 1. Contexte et objectif
+
+Construis une application web complète pour la **Commune de Mont-Ngafula (Kinshasa, RDC)**, destinée à digitaliser la « Fiche de Prospection Parcellaire » (Quartier Maman Yemo) et à automatiser la génération de plaques d'identification parcellaire.
+
+L'application doit être **déployable en production** (pas une maquette), avec :
+- une base de données persistante et chiffrée,
+- une authentification par rôle,
+- un formulaire de saisie fidèle à la fiche papier,
+- une génération de plaques verrouillée après validation,
+- un espace dédié à l'imprimerie.
+
+## 2. Stack technique recommandée
+
+- **Frontend** : Next.js (App Router) + TypeScript + Tailwind CSS.
+- **Backend** : routes API Next.js (ou un service Node/Express séparé si préféré).
+- **Base de données** : PostgreSQL managé (Supabase ou Neon), avec Prisma ou Drizzle comme ORM.
+- **Authentification** : Supabase Auth, Clerk ou NextAuth — comptes nominatifs par utilisateur, pas de mot de passe partagé.
+- **Stockage fichiers** (plaques générées en PNG/PDF) : bucket S3-compatible (Supabase Storage, Cloudflare R2).
+- **Hébergement** : Vercel (frontend + API) + Supabase/Neon (base de données). Ce couple offre un plan gratuit suffisant pour démarrer et une mise à niveau simple.
+- Justifie tout écart à cette stack si tu en proposes une autre, mais garde impérativement : base de données relationnelle managée, authentification par compte individuel, chiffrement en transit (HTTPS) et au repos.
+
+## 3. Utilisateurs et rôles (RBAC)
+
+| Rôle | Accès |
+|---|---|
+| **Agent de prospection** | Saisit et modifie ses propres fiches ; ne peut pas voir les identifiants des autres rôles |
+| **Superviseur / Chef de bureau** | Voit toutes les fiches, valide/rejette, consulte les statistiques |
+| **Imprimerie** | Voit uniquement les plaques à imprimer et déjà imprimées, télécharge les fichiers ; aucun accès aux fiches complètes ni aux données personnelles sensibles autres que celles nécessaires à l'impression (numéro, quartier, avenue) |
+| **Administrateur** | Gère les comptes, les rôles, consulte le journal d'audit |
+
+Chaque utilisateur se connecte avec son propre identifiant (email ou matricule) + mot de passe (haché avec bcrypt ou argon2) ou lien magique. Aucun accès anonyme.
+
+## 4. Modèle de données
+
+Tables minimales à créer :
+
+**`fiches`** (une ligne = une fiche de prospection)
+- `id` (uuid, clé primaire)
+- `fiche_no` (texte, **unique**)
+- `date_prospection`, `trimestre`, `annee`
+- `quartier`, `avenue`, `parcelle_no`, `plaque_no`
+- `proprietaire_nom` (chiffré au niveau colonne — voir §6), `telephone` (chiffré), `type_occupation`, `superficie`, `usage_parcelle`
+- `plaque_existante`, `statut_paiement`, `recu_no`, `sensibilisation`
+- `hygiene` (jsonb : propreté, ordures, végétation, latrines, eaux stagnantes)
+- `dechets` (jsonb : mode, bac à ordures, déchets visibles)
+- `facade` (jsonb : état, clôture, emplacement plaque, visibilité)
+- `drainage` (jsonb : canal, risque)
+- `activites` (text[] + deux champs "autre activité")
+- `remarques` (texte)
+- `avis` (jsonb : avis global, priorité, suivi)
+- `agent_id` (référence utilisateur), `agent_matricule`, `chef_rue_nom`, `chef_rue_avenue`
+- `statut_plaque` : enum `non_generee | generee | a_reimprimer | imprimee`
+- `plaque_generee_le` (timestamp, nul tant que non générée)
+- `created_at`, `updated_at`, `created_by`, `updated_by`
+
+**Contrainte anti-doublon** (au niveau base de données, pas seulement côté formulaire) :
+- Contrainte `UNIQUE` sur `fiche_no`.
+- Contrainte `UNIQUE` composite sur `(quartier, avenue, parcelle_no)`.
+- Toute tentative de création en violation doit renvoyer une erreur explicite au formulaire, avec un lien vers la fiche existante en conflit.
+
+**`plaques`** (une ligne = un fichier de plaque généré)
+- `id`, `fiche_id` (référence), `version` (incrémenté à chaque réimpression), `fichier_url`, `genere_le`, `imprime` (bool), `imprime_le`
+
+**`journal_audit`**
+- `id`, `utilisateur_id`, `action`, `fiche_id`, `donnees_avant`, `donnees_apres`, `horodatage`
+
+## 5. Spécification fonctionnelle du formulaire
+
+Reproduis fidèlement, en formulaire multi-étapes (wizard) avec barre de progression, les 9 sections suivantes issues de la fiche papier officielle :
+
+1. **Identification de la parcelle** — quartier, avenue/rue, n° parcelle, n° plaque, nom du propriétaire, téléphone, type d'occupation (propriétaire/locataire/autre), superficie estimée, usage (résidentiel/commercial/mixte)
+2. **État de l'adressage parcellaire** — plaque déjà existante (oui-ancienne / non-première / endommagée), statut de paiement (payé 15 000 FC / acompte 50 % 7 500 FC / non payé), n° de reçu, ménage sensibilisé (oui-adhère / non-à relancer / réticent)
+3. **Hygiène et salubrité** — grille à 5 critères (propreté générale, gestion des ordures, végétation non entretenue, état sanitaire des latrines, eaux stagnantes) × 3 niveaux (bon/moyen/mauvais)
+4. **Gestion des déchets** — mode d'élimination, présence d'un bac à ordures, déchets visibles devant la parcelle
+5. **État de la façade et de la clôture** — état façade, type de clôture, emplacement idéal pour la plaque, visibilité depuis la rue
+6. **Canaux de drainage** — présence/état du canal, risque d'érosion ou d'inondation
+7. **Types d'activités exercées** — liste à cocher (habitation, commerce, atelier, restaurant, école, église, santé, agriculture, entrepôt, terrain vague) + deux champs libres « autre »
+8. **Remarques et observations de l'agent** — texte libre
+9. **Avis de l'agent de prospection** — avis global (conforme/non conforme/en attente), priorité (urgente/normale/différée), suivi requis, nom et matricule de l'agent, nom et avenue du chef de rue accompagnateur
+
+Ajoute une dernière étape de **récapitulatif** avant validation, affichant un avertissement si un doublon potentiel est détecté (vérification asynchrone contre la base pendant la saisie, pas seulement à la soumission).
+
+## 6. Génération des plaques
+
+- Format plaque : rectangle horizontal (proportions ~2,45:1), fond bleu institutionnel, bordure dorée.
+- **Écusson/emblème** de la commune à gauche (prévoir un emplacement pour l'image officielle réelle si elle existe — je n'ai pas accès au fichier officiel, donc génère un espace réservé personnalisable plutôt que de copier un emblème existant).
+- **Drapeau de la RDC** à droite (motif du domaine public : fond bleu ciel, bande diagonale rouge bordée de jaune, étoile jaune en haut à gauche).
+- **Numéro de plaque** en grand caractère au centre.
+- Quartier / avenue en sous-texte, n° de fiche en petit texte de référence.
+- Génère le fichier en **SVG vectoriel** (source de vérité) puis exporte automatiquement en **PNG haute résolution (300 DPI minimum)** pour l'impression.
+- **Règle de verrouillage** : une fois `statut_plaque` passé à `generee`, il est impossible de regénérer une plaque *ex nihilo* pour cette fiche. Une modification ultérieure des informations de la fiche doit :
+  - incrémenter `version` dans `plaques`,
+  - régénérer le fichier,
+  - passer `statut_plaque` à `a_reimprimer`,
+  - conserver l'historique des versions précédentes (ne jamais écraser silencieusement).
+
+## 7. Espace Imprimerie
+
+- Connexion séparée, rôle `imprimerie`.
+- Liste des plaques « à imprimer » (nouvelles + à réimprimer) et « déjà imprimées », avec filtre par quartier/date.
+- Téléchargement individuel (SVG/PNG) et **export groupé en ZIP** des plaques en attente.
+- Action « Marquer comme imprimée » qui horodate `imprime_le` et bascule `statut_plaque` à `imprimee`.
+- Aucun accès aux données personnelles sensibles (téléphone, remarques de l'agent) au-delà de ce qui figure sur la plaque elle-même.
+
+## 8. Sécurité et chiffrement (exigence non négociable)
+
+- **HTTPS obligatoire** sur tout l'environnement (géré nativement par Vercel).
+- **Chiffrement au repos** : chiffrement natif du fournisseur de base de données (Supabase/Neon chiffrent le disque par défaut) **+** chiffrement applicatif au niveau colonne (AES-256) pour les champs les plus sensibles : nom du propriétaire, téléphone. Les clés de chiffrement ne doivent jamais être commitées dans le code — utiliser un gestionnaire de secrets (variables d'environnement Vercel/Supabase).
+- **Mots de passe** hachés avec bcrypt ou argon2, jamais stockés en clair.
+- **RBAC strict** appliqué côté serveur (jamais seulement côté interface) sur chaque route API.
+- **Journal d'audit** immuable de toute création/modification/suppression de fiche.
+- **Sauvegardes automatiques** quotidiennes de la base de données, avec test de restauration documenté.
+- **Limitation de débit (rate limiting)** sur les routes d'authentification pour prévenir le brute force.
+
+## 9. Déploiement
+
+- Fournis un fichier `.env.example` listant toutes les variables nécessaires (URL base de données, clés d'auth, clé de chiffrement, bucket de stockage).
+- Fournis les instructions de déploiement pas à pas sur Vercel + Supabase (ou l'équivalent choisi), y compris la commande de migration de base de données.
+- Fournis un jeu de données de démonstration (2-3 fiches fictives) pour valider le parcours complet en environnement de test avant mise en production.
+
+## 10. Livrables attendus
+
+1. Code source complet du projet (structure de dossiers claire, README d'installation).
+2. Schéma de base de données (migrations incluses).
+3. Interface de saisie step-by-step conforme à la fiche officielle.
+4. Générateur de plaques (SVG + export PNG) avec verrouillage après génération.
+5. Espace imprimerie fonctionnel avec export groupé.
+6. Authentification par rôle opérationnelle.
+7. Instructions de déploiement testées.
+
+---
+
+**Note** : ce prompt part d'un prototype déjà réalisé (formulaire complet et génération de plaques en HTML autonome) qui peut servir de référence visuelle et fonctionnelle pour accélérer le développement de la version définitive.
