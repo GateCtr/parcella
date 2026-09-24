@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useForm, type FieldErrors } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -109,6 +109,7 @@ const STEPS = [
 export default function FicheNew() {
   const [step, setStep] = useState(0);
   const [isCheckingDuplicate, setIsCheckingDuplicate] = useState(false);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   
@@ -166,6 +167,10 @@ export default function FicheNew() {
       setStep(activeSteps.find((item) => item.id > step)?.id ?? activeSteps[activeSteps.length - 1].id);
     }
   }, [settings, activeIndex, activeSteps, step]);
+
+  useEffect(() => {
+    if (scrollAreaRef.current) scrollAreaRef.current.scrollTop = 0;
+  }, [step]);
 
   const checkAddress = async (values: FicheFormValues): Promise<boolean> => {
     setIsCheckingDuplicate(true);
@@ -330,8 +335,8 @@ export default function FicheNew() {
   if (settingsError || !settings) return <p role="alert" className="text-destructive">Impossible de charger les paramètres des rubriques. Réessayez avant de créer une fiche.</p>;
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6 pb-20">
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+    <div className="mx-auto flex h-full min-h-0 w-full max-w-3xl flex-col gap-4">
+      <div className="flex shrink-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Nouvelle prospection</h1>
           <p className="text-sm text-muted-foreground mt-1">
@@ -348,7 +353,7 @@ export default function FicheNew() {
         </div>
       </div>
 
-      <div className="flex gap-1 overflow-x-auto pb-2 scrollbar-hide">
+      <div className="flex shrink-0 gap-1 overflow-x-auto pb-2 scrollbar-hide">
         {activeSteps.map((s, i) => (
           <div 
             key={s.id} 
@@ -359,9 +364,9 @@ export default function FicheNew() {
         ))}
       </div>
 
-      <Card className="border-t-4 shadow-md" style={{ borderTopColor: 'hsl(var(--primary))' }}>
-        <CardContent className="p-4 sm:p-6 md:p-8">
-          <div className="flex items-center gap-3 mb-6 pb-4 border-b">
+      <Card className="flex min-h-[20rem] min-w-0 flex-1 flex-col overflow-hidden border-t-4 shadow-md" style={{ borderTopColor: 'hsl(var(--primary))' }}>
+        <CardContent className="flex min-h-0 flex-1 flex-col p-0">
+          <div className="flex shrink-0 items-center gap-3 border-b px-4 py-4 sm:px-6 md:px-8">
             <div className="bg-primary/10 text-primary p-2 rounded-lg">
               <StepIcon className="h-6 w-6" />
             </div>
@@ -369,7 +374,8 @@ export default function FicheNew() {
           </div>
 
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit, onInvalid)} className="space-y-8">
+            <form onSubmit={form.handleSubmit(onSubmit, onInvalid)} className="flex min-h-0 flex-1 flex-col">
+              <div ref={scrollAreaRef} className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6 md:px-8">
               
               {/* ÉTAPE 0: Identification */}
               <div className={step === 0 ? 'block space-y-6' : 'hidden'}>
@@ -592,13 +598,14 @@ export default function FicheNew() {
                 </div>
               </div>
 
-              <div className="flex justify-between mt-8 pt-6 border-t border-border/60">
+              </div>
+              <div className="flex shrink-0 justify-between gap-2 border-t border-border/60 px-4 py-4 sm:px-6 md:px-8">
                 <Button 
                   type="button" 
                   variant="outline" 
                   onClick={prevStep} 
                   disabled={activeIndex <= 0 || isCheckingDuplicate || createFiche.isPending}
-                  className="h-12 px-6"
+                  className="h-12 px-3 sm:px-6"
                 >
                   <ChevronLeft className="mr-2 h-5 w-5" /> Précédent
                 </Button>
@@ -608,7 +615,7 @@ export default function FicheNew() {
                     type="button" 
                     onClick={nextStep} 
                     disabled={step === 0 && (loadingCommunes || communesError) || isCheckingDuplicate || activeIndex < 0}
-                    className="h-12 px-6"
+                    className="h-12 px-3 sm:px-6"
                   >
                     {isCheckingDuplicate ? (
                       <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Vérification...</>
@@ -619,7 +626,7 @@ export default function FicheNew() {
                 ) : (
                   <Button 
                     type="submit" 
-                    className="h-12 px-8 bg-green-600 hover:bg-green-700 text-white font-bold"
+                    className="h-12 px-3 sm:px-8 bg-green-600 hover:bg-green-700 text-white font-bold"
                     disabled={createFiche.isPending || isCheckingDuplicate || (step === 0 && (loadingCommunes || communesError))}
                   >
                     {createFiche.isPending ? (
