@@ -14,6 +14,8 @@ interface PlaquePreviewProps {
 export function PlaquePreview({ parcelleNo, avenue, localite, quartier, commune, qrValue, isFictive }: PlaquePreviewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
+  const isRue = /^rue\b/i.test(avenue.trim());
+  const address = avenue.replace(/^(?:av(?:enue)?|rue)[.\s]+/i, '').trim();
 
   useEffect(() => {
     const observer = new ResizeObserver((entries) => {
@@ -81,8 +83,8 @@ export function PlaquePreview({ parcelleNo, avenue, localite, quartier, commune,
             {/* Pied de page : Adresse et QR */}
             <div className="flex justify-between items-end z-10 relative">
                <div className="flex flex-col gap-1 text-[38px] font-extrabold text-[#0a1f5c] uppercase tracking-tight leading-[1.05]">
-                <div>AV. {avenue}</div>
-                 <div>LO/ {localite?.trim() || '—'}</div>
+                 <div className="relative h-10"><span className="absolute left-[384px] top-0 -translate-x-1/2 whitespace-nowrap">{isRue ? 'RUE' : 'AV.'} {address}</span></div>
+                 <div className="relative h-10"><span className="absolute left-[384px] top-0 -translate-x-1/2 whitespace-nowrap">LO/ {localite?.trim() || '—'}</span></div>
                 <div>Q/ {quartier}</div>
                 <div>C/ {commune}</div>
               </div>

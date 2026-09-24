@@ -21,10 +21,10 @@ function star(cx: number, cy: number, outer: number, inner: number) {
   }).join(" ");
 }
 
-function textLine(label: string, y: number) {
+function textLine(label: string, y: number, centerX = 535, maxWidth = 780) {
   const fontSize = Math.min(96, Math.max(40, Math.floor(1200 / (label.length * 0.68))));
-  const fit = fontSize * label.length * 0.68 > 780 ? ' textLength="780" lengthAdjust="spacingAndGlyphs"' : "";
-  return `<text x="535" y="${y}" text-anchor="middle" fill="#193761" font-family="Arial Narrow,DejaVu Sans Condensed,Arial,sans-serif" font-weight="900" font-stretch="condensed" font-size="${fontSize}"${fit}>${xml(label)}</text>`;
+  const fit = fontSize * label.length * 0.68 > maxWidth ? ` textLength="${maxWidth}" lengthAdjust="spacingAndGlyphs"` : "";
+  return `<text x="${centerX}" y="${y}" text-anchor="middle" fill="#193761" font-family="Arial Narrow,DejaVu Sans Condensed,Arial,sans-serif" font-weight="900" font-stretch="condensed" font-size="${fontSize}"${fit}>${xml(label)}</text>`;
 }
 
 export function plaqueSvg(f: FicheRow, plaqueNo: string, ficheUrl: string) {
@@ -78,10 +78,10 @@ export function plaqueSvg(f: FicheRow, plaqueNo: string, ficheUrl: string) {
   <path d="M0 604 909 0 H960 V47 L51 640 H0Z" fill="#ce1126"/>
   <polygon points="${star(175, 190, 134, 54)}" fill="#f7d116"/>
 </svg>
- <image id="plaque-layout-v6" x="943" y="102" width="154" height="154" href="${kinshasaSeal}" preserveAspectRatio="xMidYMid meet"/>
+ <image id="plaque-layout-v7" x="943" y="102" width="154" height="154" href="${kinshasaSeal}" preserveAspectRatio="xMidYMid meet"/>
  <text x="600" y="290" text-anchor="middle" fill="#193761" font-family="Arial Narrow,DejaVu Sans Condensed,Arial,sans-serif" font-weight="900" font-stretch="condensed" font-size="${numberFontSize}"${numberFit}>${xml(f.parcelleNo)}</text>
- ${textLine(`${isRue ? "RUE" : "AV."} ${address.toUpperCase()}`, 392)}
- ${textLine(`LO/ ${(f.localite?.trim() || "—").toUpperCase()}`, 478)}
+ ${textLine(`${isRue ? "RUE" : "AV."} ${address.toUpperCase()}`, 392, 600, 900)}
+ ${textLine(`LO/ ${(f.localite?.trim() || "—").toUpperCase()}`, 478, 600, 900)}
  ${textLine(`Q/ ${f.quartier.toUpperCase()}`, 564)}
  ${textLine(`C/ ${f.commune.toUpperCase()}`, 650)}
  <rect x="${qrX - quietZone}" y="${qrY - quietZone}" width="${qrSize + quietZone * 2}" height="${qrSize + quietZone * 2}" fill="#fff"/>
