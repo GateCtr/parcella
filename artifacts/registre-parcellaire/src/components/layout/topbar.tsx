@@ -16,6 +16,7 @@ export default function Topbar() {
     if (location.startsWith('/fiches/')) return 'Détail de la fiche';
     if (location.startsWith('/fiches')) return 'Registre des fiches';
     if (location.startsWith('/imprimerie')) return 'File d\'impression';
+    if (location === '/parametres') return 'Paramètres';
     if (location === '/plaques/modele') return 'Modèle de plaque';
     return '';
   };

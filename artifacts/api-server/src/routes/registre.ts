@@ -1,12 +1,13 @@
 import { Router, type IRouter } from "express";
 import { and, desc, eq, ilike, or, sql } from "drizzle-orm";
 import { getAuth } from "@clerk/express";
-import { db, fichesTable, plaquesTable, auditTable } from "@workspace/db";
+import { db, fichesTable, plaquesTable, auditTable, rubriqueSettingsTable } from "@workspace/db";
 import {
   CheckFicheDuplicateQueryParams,
   CreateFicheBody,
   DecideFicheBody,
   DecideFicheParams,
+  GetRubriqueSettingsResponse,
   GeneratePlaqueParams,
   GetFicheParams,
   ListFichesQueryParams,
@@ -16,6 +17,8 @@ import {
   UpdateFicheParams,
   UpdateFicheLocaliteBody,
   UpdateFicheLocaliteParams,
+  UpdateRubriqueSettingBody,
+  UpdateRubriqueSettingResponse,
 } from "@workspace/api-zod";
 import { decrypt, encrypt } from "../lib/crypto";
 import { plaqueSvg } from "../lib/plaque-svg";
@@ -36,6 +39,62 @@ function publicFiche(row: typeof fichesTable.$inferSelect) {
 }
 router.get("/communes", (_req, res) => res.json(COMMUNES.map((nom) => ({ code: code(nom), nom }))));
 router.use(requireUser);
+
+async function ensureRubriqueSettings() {
+  await db.insert(rubriqueSettingsTable).values({ id: 1 }).onConflictDoNothing();
+  const [settings] = await db.select().from(rubriqueSettingsTable).where(eq(rubriqueSettingsTable.id, 1));
+  return settings;
+}
+
+function rubriqueSettingsResponse(settings: typeof rubriqueSettingsTable.$inferSelect) {
+  return {
+    adressage: settings.adressage,
+    hygiene: settings.hygiene,
+    dechets: settings.dechets,
+    facade: settings.facade,
+    drainage: settings.drainage,
+    activites: settings.activites,
+    remarques: settings.remarques,
+    avis: settings.avis,
+  };
+}
+
+router.get("/settings/rubriques", async (_req, res): Promise<void> => {
+  const settings = await ensureRubriqueSettings();
+  res.json(GetRubriqueSettingsResponse.parse(rubriqueSettingsResponse(settings)));
+});
+
+router.patch("/settings/rubriques", async (req, res): Promise<void> => {
+  const body = UpdateRubriqueSettingBody.safeParse(req.body);
+  if (!body.success) { res.status(400).json({ error: body.error.message }); return; }
+
+  const updated = await db.transaction(async (tx) => {
+    await tx.insert(rubriqueSettingsTable).values({ id: 1 }).onConflictDoNothing();
+    const [before] = await tx.select().from(rubriqueSettingsTable)
+      .where(eq(rubriqueSettingsTable.id, 1)).for("update");
+    const fields = {
+      adressage: { adressage: body.data.active },
+      hygiene: { hygiene: body.data.active },
+      dechets: { dechets: body.data.active },
+      facade: { facade: body.data.active },
+      drainage: { drainage: body.data.active },
+      activites: { activites: body.data.active },
+      remarques: { remarques: body.data.active },
+      avis: { avis: body.data.active },
+    }[body.data.rubrique];
+    const [after] = await tx.update(rubriqueSettingsTable).set(fields)
+      .where(eq(rubriqueSettingsTable.id, 1)).returning();
+    await tx.insert(auditTable).values({
+      utilisateurId: userId(req)!,
+      action: `MODIFICATION_PARAMETRES_RUBRIQUES_${body.data.rubrique.toUpperCase()}`,
+      donneesAvant: { [body.data.rubrique]: before[body.data.rubrique] },
+      donneesApres: { [body.data.rubrique]: after[body.data.rubrique] },
+    });
+    return after;
+  });
+
+  res.json(UpdateRubriqueSettingResponse.parse(rubriqueSettingsResponse(updated)));
+});
 
 router.get("/fiches", async (req, res): Promise<void> => {
   const parsed = ListFichesQueryParams.safeParse(req.query);

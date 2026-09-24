@@ -12,6 +12,7 @@ tags:
   - name: fiches
   - name: dashboard
   - name: plaques
+  - name: settings
 paths:
   /healthz:
     get:
@@ -243,6 +244,33 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Plaque"
+  /settings/rubriques:
+    get:
+      operationId: getRubriqueSettings
+      tags: [settings]
+      responses:
+        "200":
+          description: Configuration globale des rubriques
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RubriqueSettings"
+    patch:
+      operationId: updateRubriqueSetting
+      tags: [settings]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RubriqueSettingChange"
+      responses:
+        "200":
+          description: Configuration globale mise à jour
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RubriqueSettings"
 components:
   parameters:
     FicheId:
@@ -370,6 +398,26 @@ components:
         svg: { type: string }
         genereLe: { type: string, format: date-time }
         imprimeLe: { type: ["string", "null"], format: date-time }
+    RubriqueSettings:
+      type: object
+      required: [adressage, hygiene, dechets, facade, drainage, activites, remarques, avis]
+      properties:
+        adressage: { type: boolean }
+        hygiene: { type: boolean }
+        dechets: { type: boolean }
+        facade: { type: boolean }
+        drainage: { type: boolean }
+        activites: { type: boolean }
+        remarques: { type: boolean }
+        avis: { type: boolean }
+    RubriqueSettingChange:
+      type: object
+      required: [rubrique, active]
+      properties:
+        rubrique:
+          type: string
+          enum: [adressage, hygiene, dechets, facade, drainage, activites, remarques, avis]
+        active: { type: boolean }
     Dashboard:
       type: object
       required: [totalFiches, enAttente, validees, plaquesAImprimer, repartitionCommunes, activiteRecente]

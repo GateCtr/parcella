@@ -33,7 +33,9 @@ import type {
   HealthStatus,
   ListFichesParams,
   ListPlaquesParams,
-  Plaque
+  Plaque,
+  RubriqueSettingChange,
+  RubriqueSettings
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -1053,5 +1055,158 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getMarkPlaquePrintedMutationOptions(options));
+    }
+
+export const getGetRubriqueSettingsUrl = () => {
+
+
+
+
+  return `/api/settings/rubriques`
+}
+
+export const getRubriqueSettings = async ( options?: Parameters<typeof customFetch>[1]): Promise<RubriqueSettings> => {
+
+  return customFetch<RubriqueSettings>(getGetRubriqueSettingsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetRubriqueSettingsQueryKey = () => {
+    return [
+    `/api/settings/rubriques`
+    ] as const;
+    }
+
+
+export const getGetRubriqueSettingsQueryOptions = <TData = Awaited<ReturnType<typeof getRubriqueSettings>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRubriqueSettings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetRubriqueSettingsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getRubriqueSettings>>> = ({ signal }) => getRubriqueSettings({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getRubriqueSettings>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetRubriqueSettingsQueryResult = NonNullable<Awaited<ReturnType<typeof getRubriqueSettings>>>
+export type GetRubriqueSettingsQueryError = ErrorType<unknown>
+
+
+
+export function useGetRubriqueSettings<TData = Awaited<ReturnType<typeof getRubriqueSettings>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRubriqueSettings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetRubriqueSettingsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateRubriqueSettingUrl = () => {
+
+
+
+
+  return `/api/settings/rubriques`
+}
+
+export const updateRubriqueSetting = async (rubriqueSettingChange: RubriqueSettingChange, options?: Parameters<typeof customFetch>[1]): Promise<RubriqueSettings> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<RubriqueSettings>(getUpdateRubriqueSettingUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(rubriqueSettingChange)
+  }
+);}
+
+
+
+
+
+export const getUpdateRubriqueSettingMutationKey = () => ['updateRubriqueSetting'] as const;
+
+export const getUpdateRubriqueSettingMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateRubriqueSetting>>, TError,UpdateRubriqueSettingMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateRubriqueSetting>>, TError,UpdateRubriqueSettingMutationVariables, TContext> => {
+
+const mutationKey = getUpdateRubriqueSettingMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateRubriqueSetting>>, UpdateRubriqueSettingMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateRubriqueSetting(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateRubriqueSettingMutationResult = NonNullable<Awaited<ReturnType<typeof updateRubriqueSetting>>>
+    export type UpdateRubriqueSettingMutationBody = BodyType<RubriqueSettingChange>
+    export type UpdateRubriqueSettingMutationError = ErrorType<unknown>
+    export type UpdateRubriqueSettingMutationVariables = {data: BodyType<RubriqueSettingChange>}
+
+    export const useUpdateRubriqueSetting = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateRubriqueSetting>>, TError,UpdateRubriqueSettingMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateRubriqueSetting>>,
+        TError,
+        UpdateRubriqueSettingMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateRubriqueSettingMutationOptions(options));
     }
 

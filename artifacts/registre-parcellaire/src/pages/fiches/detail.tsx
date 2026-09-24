@@ -1,5 +1,5 @@
 import { useParams, Link } from 'wouter';
-import { useGetFiche, useDecideFiche, useGeneratePlaque, getGetFicheQueryKey, type Fiche } from '@workspace/api-client-react';
+import { useGetFiche, useGetRubriqueSettings, useDecideFiche, useGeneratePlaque, getGetFicheQueryKey, getGetRubriqueSettingsQueryKey, type Fiche } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -45,6 +45,9 @@ export default function FicheDetail({ exampleFiche }: { exampleFiche?: Fiche }) 
   const { data: savedFiche, isLoading, error } = useGetFiche(id ?? '', {
     query: { queryKey: getGetFicheQueryKey(id ?? ''), enabled: !isExample && Boolean(id) },
   });
+  const { data: rubriqueSettings, isLoading: isRubriqueSettingsLoading, error: rubriqueSettingsError } = useGetRubriqueSettings({
+    query: { queryKey: getGetRubriqueSettingsQueryKey(), enabled: !isExample, refetchInterval: 30_000 },
+  });
   const fiche = exampleFiche ?? savedFiche;
 
   const decideFiche = useDecideFiche();
@@ -52,6 +55,13 @@ export default function FicheDetail({ exampleFiche }: { exampleFiche?: Fiche }) 
 
   if (!isExample && isLoading) return <DataSpinner label="Chargement de la fiche…" />;
   if ((!isExample && error) || !fiche) return <div className="p-8 text-center text-destructive font-semibold">Erreur: Impossible de charger la fiche.</div>;
+  if (!isExample && isRubriqueSettingsLoading) return <DataSpinner label="Chargement des paramètres d’affichage…" />;
+  if (!isExample && (rubriqueSettingsError || !rubriqueSettings)) return <div className="p-8 text-center text-destructive font-semibold">Erreur: Impossible de charger les paramètres d’affichage des rubriques.</div>;
+
+  const visibleSections = isExample
+    ? { adressage: true, hygiene: true, dechets: true, facade: true, drainage: true, activites: true, remarques: true, avis: true }
+    : rubriqueSettings!;
+  const hasPageTwoSections = visibleSections.facade || visibleSections.drainage || visibleSections.activites || visibleSections.remarques || visibleSections.avis;
 
   const handleDecision = (decision: 'validee' | 'rejetee') => {
     if (isExample) return;
@@ -308,6 +318,7 @@ export default function FicheDetail({ exampleFiche }: { exampleFiche?: Fiche }) 
             </tbody>
           </table>
 
+          {visibleSections.adressage && (<>
           {/* 2. ADRESSAGE */}
           <SectionHeader num="2" title="ÉTAT DE L'ADRESSAGE PARCELLAIRE" />
           <table className="w-full text-[11px] border-collapse border border-black mb-1">
@@ -348,7 +359,9 @@ export default function FicheDetail({ exampleFiche }: { exampleFiche?: Fiche }) 
               </tr>
             </tbody>
           </table>
+          </>)}
 
+          {visibleSections.hygiene && (<>
           {/* 3. HYGIÈNE */}
           <SectionHeader num="3" title="HYGIÈNE ET SALUBRITÉ DE LA PARCELLE" />
           <table className="w-full text-[11px] border-collapse border border-black text-center mb-1">
@@ -377,7 +390,9 @@ export default function FicheDetail({ exampleFiche }: { exampleFiche?: Fiche }) 
               ))}
             </tbody>
           </table>
+          </>)}
 
+          {visibleSections.dechets && (<>
           {/* 4. DÉCHETS */}
           <SectionHeader num="4" title="GESTION DES DÉCHETS" />
           <table className="w-full text-[11px] border-collapse border border-black mb-1">
@@ -415,11 +430,13 @@ export default function FicheDetail({ exampleFiche }: { exampleFiche?: Fiche }) 
               </tr>
             </tbody>
           </table>
-          
-          <div className="flex-1"></div> {/* Spacer to push next content */}
+          </>)}
+
+          <div className="flex-1"></div> {/* Spacer to preserve page-one layout */}
           
         </div>
         
+        {hasPageTwoSections && (<>
         {/* Page Break for Print */}
         <div className="no-print h-4 bg-gray-100 border-y border-dashed border-gray-300 w-full mb-4 mt-2"></div>
         
@@ -432,6 +449,7 @@ export default function FicheDetail({ exampleFiche }: { exampleFiche?: Fiche }) 
           )}
           
           {/* 5. FAÇADE */}
+          {visibleSections.facade && (
           <div className="break-inside-avoid">
             <SectionHeader num="5" title="ÉTAT DE LA FAÇADE ET DE LA CLÔTURE" />
             <table className="w-full text-[11px] border-collapse border border-black mb-1">
@@ -487,8 +505,10 @@ export default function FicheDetail({ exampleFiche }: { exampleFiche?: Fiche }) 
               </tbody>
             </table>
           </div>
+          )}
 
           {/* 6. DRAINAGE */}
+          {visibleSections.drainage && (
           <div className="break-inside-avoid">
             <SectionHeader num="6" title="PRÉSENCE ET ÉTAT DES CANAUX DE DRAINAGE" />
             <table className="w-full text-[11px] border-collapse border border-black mb-1">
@@ -516,8 +536,10 @@ export default function FicheDetail({ exampleFiche }: { exampleFiche?: Fiche }) 
               </tbody>
             </table>
           </div>
+          )}
 
           {/* 7. ACTIVITÉS */}
+          {visibleSections.activites && (
           <div className="break-inside-avoid">
             <SectionHeader num="7" title="TYPES D'ACTIVITÉS EXERCÉES SUR LA PARCELLE" />
             <table className="w-full text-[11px] border-collapse border border-black mb-1 bg-white">
@@ -547,16 +569,20 @@ export default function FicheDetail({ exampleFiche }: { exampleFiche?: Fiche }) 
               </tbody>
             </table>
           </div>
+          )}
 
           {/* 8. REMARQUES */}
+          {visibleSections.remarques && (
           <div className="break-inside-avoid">
             <SectionHeader num="8" title="REMARQUES ET OBSERVATIONS DE L'AGENT" />
             <div className="border border-black min-h-[70px] p-2 text-[11px] text-black bg-white whitespace-pre-wrap">
               {fiche.remarques}
             </div>
           </div>
+          )}
 
           {/* 9. AVIS DE L'AGENT */}
+          {visibleSections.avis && (
           <div className="break-inside-avoid">
             <SectionHeader num="9" title="AVIS DE L'AGENT DE PROSPECTION" />
             <table className="w-full text-[11px] border-collapse border border-black mb-2">
@@ -635,26 +661,30 @@ export default function FicheDetail({ exampleFiche }: { exampleFiche?: Fiche }) 
               </tbody>
             </table>
           </div>
+          )}
 
-          <div className="flex-1"></div> {/* Spacer */}
+          {visibleSections.avis && <div className="flex-1"></div>} {/* Spacer */}
 
-          <div className="text-center mt-6 text-[#184490] font-bold text-[10px] uppercase">
-            COMMUNE DE {fiche.commune} - MAISON COMMUNALE
-          </div>
+          {visibleSections.avis && (
+            <div className="text-center mt-6 text-[#184490] font-bold text-[10px] uppercase">
+              COMMUNE DE {fiche.commune} - MAISON COMMUNALE
+            </div>
+          )}
           
         </div>
+        </>)}
       </div>
       </div>
       
       {/* Legacy Notes */}
-      {(hygiene.notes || dechets.notes || facade.notes || drainage.notes) && (
+      {((visibleSections.hygiene && hygiene.notes) || (visibleSections.dechets && dechets.notes) || (visibleSections.facade && facade.notes) || (visibleSections.drainage && drainage.notes)) && (
         <div className="max-w-5xl mx-auto mt-8 p-4 bg-muted/50 rounded-lg print:break-before-page print:bg-white print:mt-0">
           <h4 className="font-bold text-sm mb-2 text-muted-foreground">Notes supplémentaires (anciennes données)</h4>
           <ul className="text-xs space-y-1">
-            {hygiene.notes && <li><strong>Hygiène:</strong> {hygiene.notes}</li>}
-            {dechets.notes && <li><strong>Déchets:</strong> {dechets.notes}</li>}
-            {facade.notes && <li><strong>Façade:</strong> {facade.notes}</li>}
-            {drainage.notes && <li><strong>Drainage:</strong> {drainage.notes}</li>}
+            {visibleSections.hygiene && hygiene.notes && <li><strong>Hygiène:</strong> {hygiene.notes}</li>}
+            {visibleSections.dechets && dechets.notes && <li><strong>Déchets:</strong> {dechets.notes}</li>}
+            {visibleSections.facade && facade.notes && <li><strong>Façade:</strong> {facade.notes}</li>}
+            {visibleSections.drainage && drainage.notes && <li><strong>Drainage:</strong> {drainage.notes}</li>}
           </ul>
         </div>
       )}

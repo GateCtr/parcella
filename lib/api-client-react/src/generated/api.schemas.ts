@@ -191,6 +191,36 @@ export interface Plaque {
   imprimeLe?: string | null;
 }
 
+export interface RubriqueSettings {
+  adressage: boolean;
+  hygiene: boolean;
+  dechets: boolean;
+  facade: boolean;
+  drainage: boolean;
+  activites: boolean;
+  remarques: boolean;
+  avis: boolean;
+}
+
+export type RubriqueSettingChangeRubrique = typeof RubriqueSettingChangeRubrique[keyof typeof RubriqueSettingChangeRubrique];
+
+
+export const RubriqueSettingChangeRubrique = {
+  adressage: 'adressage',
+  hygiene: 'hygiene',
+  dechets: 'dechets',
+  facade: 'facade',
+  drainage: 'drainage',
+  activites: 'activites',
+  remarques: 'remarques',
+  avis: 'avis',
+} as const;
+
+export interface RubriqueSettingChange {
+  rubrique: RubriqueSettingChangeRubrique;
+  active: boolean;
+}
+
 export type DashboardRepartitionCommunesItem = {
   commune: string;
   total: number;

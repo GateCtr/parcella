@@ -473,3 +473,32 @@ export const MarkPlaquePrintedResponse = zod.object({
 })
 
 
+export const GetRubriqueSettingsResponse = zod.object({
+  "adressage": zod.boolean(),
+  "hygiene": zod.boolean(),
+  "dechets": zod.boolean(),
+  "facade": zod.boolean(),
+  "drainage": zod.boolean(),
+  "activites": zod.boolean(),
+  "remarques": zod.boolean(),
+  "avis": zod.boolean()
+})
+
+
+export const UpdateRubriqueSettingBody = zod.object({
+  "rubrique": zod.enum(['adressage', 'hygiene', 'dechets', 'facade', 'drainage', 'activites', 'remarques', 'avis']),
+  "active": zod.boolean()
+})
+
+export const UpdateRubriqueSettingResponse = zod.object({
+  "adressage": zod.boolean(),
+  "hygiene": zod.boolean(),
+  "dechets": zod.boolean(),
+  "facade": zod.boolean(),
+  "drainage": zod.boolean(),
+  "activites": zod.boolean(),
+  "remarques": zod.boolean(),
+  "avis": zod.boolean()
+})
+
+

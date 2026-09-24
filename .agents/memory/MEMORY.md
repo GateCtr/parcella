@@ -1,2 +1,3 @@
 - [Portée de la fiche parcellaire](fiche-parcellaire-portee.md) — Le modèle fourni vise Mont-Ngafula, mais l’application doit garder les 24 communes sans attribuer son adresse aux autres.
 - [Plaque et impression](plaque-impression.md) — Ne pas inventer la localité ; en Chromium, une page nommée ajoutait une page blanche et une marge @page affichait l’URL.
+- [Rubriques configurables](rubriques-configurables.md) — Les métadonnées indispensables doivent rester accessibles même si la dernière rubrique est masquée ; masquer ne supprime pas l’historique.

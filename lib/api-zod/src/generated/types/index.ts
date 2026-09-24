@@ -36,3 +36,6 @@ export * from './listFichesParams';
 export * from './listPlaquesParams';
 export * from './plaque';
 export * from './plaqueStatut';
+export * from './rubriqueSettingChange';
+export * from './rubriqueSettingChangeRubrique';
+export * from './rubriqueSettings';

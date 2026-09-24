@@ -26,6 +26,7 @@ const FicheNew = lazy(() => import('@/pages/fiches/new'));
 const FicheDetail = lazy(() => import('@/pages/fiches/detail'));
 const FicheExample = lazy(() => import('@/pages/fiches/example'));
 const Imprimerie = lazy(() => import('@/pages/imprimerie'));
+const Parametres = lazy(() => import('@/pages/parametres'));
 const PlaqueModele = lazy(() => import('@/pages/plaques/modele'));
 const FichePlaque = lazy(() => import('@/pages/plaques/fiche-plaque'));
 
@@ -87,6 +88,10 @@ function Router() {
 
         <Route path="/imprimerie">
           {() => <ProtectedRoute component={Imprimerie} />}
+        </Route>
+
+        <Route path="/parametres">
+          {() => <ProtectedRoute component={Parametres} />}
         </Route>
 
         <Route path="/plaques/modele">

@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm, type FieldErrors } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Link, useLocation } from 'wouter';
-import { useCreateFiche, useListCommunes, checkFicheDuplicate, FicheInput } from '@workspace/api-client-react';
+import { useCreateFiche, useListCommunes, useGetRubriqueSettings, getGetRubriqueSettingsQueryKey, checkFicheDuplicate, FicheInput } from '@workspace/api-client-react';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -21,6 +21,7 @@ import {
   avisGlobalOptions, prioriteOptions, suiviOptions 
 } from '@/components/fiche/constants';
 import { CustomRadioGroup, CustomMultiSelect, CustomSelect } from '@/components/fiche/form-helpers';
+import { RUBRIQUES, type RubriqueKey } from '@/lib/rubriques';
 
 const ficheSchema = z.object({
   commune: z.string().min(1, 'Requis'),
@@ -40,55 +41,58 @@ const ficheSchema = z.object({
   
   usageParcelle: z.string().min(1, 'Requis'),
 
-  plaqueExistante: z.string().min(1, 'Requis'),
-  statutPaiement: z.string().min(1, 'Requis'),
+  plaqueExistante: z.string(),
+  statutPaiement: z.string(),
   recuNo: z.string().optional(),
-  sensibilisation: z.string().min(1, 'Requis'),
+  sensibilisation: z.string(),
 
-  hygiene_proprete: z.string().min(1, 'Requis'),
-  hygiene_ordures: z.string().min(1, 'Requis'),
-  hygiene_vegetation: z.string().min(1, 'Requis'),
-  hygiene_latrines: z.string().min(1, 'Requis'),
-  hygiene_eauxStagnantes: z.string().min(1, 'Requis'),
+  hygiene_proprete: z.string(),
+  hygiene_ordures: z.string(),
+  hygiene_vegetation: z.string(),
+  hygiene_latrines: z.string(),
+  hygiene_eauxStagnantes: z.string(),
 
-  dechets_modeElimination: z.string().min(1, 'Requis'),
-  dechets_bacOrdures: z.string().min(1, 'Requis'),
-  dechets_visibles: z.string().min(1, 'Requis'),
+  dechets_modeElimination: z.string(),
+  dechets_bacOrdures: z.string(),
+  dechets_visibles: z.string(),
 
-  facade_etat: z.string().min(1, 'Requis'),
-  facade_cloture: z.string().min(1, 'Requis'),
-  facade_emplacement: z.string().min(1, 'Requis'),
+  facade_etat: z.string(),
+  facade_cloture: z.string(),
+  facade_emplacement: z.string(),
   facade_emplacementAutre: z.string().optional(),
-  facade_visibilite: z.string().min(1, 'Requis'),
+  facade_visibilite: z.string(),
 
-  drainage_canal: z.string().min(1, 'Requis'),
-  drainage_risque: z.string().min(1, 'Requis'),
+  drainage_canal: z.string(),
+  drainage_risque: z.string(),
 
   activites: z.array(z.string()).optional(),
   activites_autres: z.string().optional(),
 
   remarques: z.string().optional(),
 
-  avis_global: z.string().min(1, 'Requis'),
-  avis_priorite: z.string().min(1, 'Requis'),
+  avis_global: z.string(),
+  avis_priorite: z.string(),
   avis_suivi: z.array(z.string()).optional(),
-  avis_attestation: z.boolean().refine(val => val === true, "La certification est requise pour enregistrer."),
+  avis_attestation: z.boolean(),
 
   agentMatricule: z.string().optional(),
   chefRueNom: z.string().optional(),
   chefRueAvenue: z.string().optional(),
   dateProspection: z.string().min(1, 'Requis'),
-}).superRefine((data, ctx) => {
-  if (data.facade_emplacement === 'autre' && (!data.facade_emplacementAutre || !data.facade_emplacementAutre.trim())) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: 'Veuillez préciser l\'emplacement',
-      path: ['facade_emplacementAutre'],
-    });
-  }
 });
 
 type FicheFormValues = z.infer<typeof ficheSchema>;
+
+const REQUIRED_BY_RUBRIQUE = {
+  adressage: ['plaqueExistante', 'statutPaiement', 'sensibilisation'],
+  hygiene: ['hygiene_proprete', 'hygiene_ordures', 'hygiene_vegetation', 'hygiene_latrines', 'hygiene_eauxStagnantes'],
+  dechets: ['dechets_modeElimination', 'dechets_bacOrdures', 'dechets_visibles'],
+  facade: ['facade_etat', 'facade_cloture', 'facade_emplacement', 'facade_visibilite'],
+  drainage: ['drainage_canal', 'drainage_risque'],
+  activites: [],
+  remarques: [],
+  avis: ['avis_global', 'avis_priorite'],
+} as const satisfies Record<RubriqueKey, readonly (keyof FicheFormValues)[]>;
 
 const STEPS = [
   { id: 0, title: 'Identification', icon: MapPin },
@@ -109,10 +113,35 @@ export default function FicheNew() {
   const { toast } = useToast();
   
   const { data: communes, isLoading: loadingCommunes, isError: communesError } = useListCommunes();
+  const { data: settings, isLoading: loadingSettings, isError: settingsError } = useGetRubriqueSettings({
+    query: { queryKey: getGetRubriqueSettingsQueryKey(), refetchInterval: 30_000 },
+  });
   const createFiche = useCreateFiche();
+  const activeSteps = useMemo(
+    () => STEPS.filter((item) => item.id === 0 || settings?.[RUBRIQUES[item.id - 1].key] === true),
+    [settings],
+  );
+  const activeIndex = activeSteps.findIndex((item) => item.id === step);
+  const validationSchema = useMemo(() => ficheSchema.superRefine((data, ctx) => {
+    if (!settings) return;
+    for (const { key } of RUBRIQUES) {
+      if (!settings[key]) continue;
+      for (const field of REQUIRED_BY_RUBRIQUE[key]) {
+        if (!String(data[field] ?? '').trim()) {
+          ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Requis', path: [field] });
+        }
+      }
+    }
+    if (settings.facade && data.facade_emplacement === 'autre' && !data.facade_emplacementAutre?.trim()) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Veuillez préciser l'emplacement", path: ['facade_emplacementAutre'] });
+    }
+    if (settings.avis && !data.avis_attestation) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'La certification est requise pour enregistrer.', path: ['avis_attestation'] });
+    }
+  }), [settings]);
 
   const form = useForm<FicheFormValues>({
-    resolver: zodResolver(ficheSchema),
+    resolver: zodResolver(validationSchema),
     defaultValues: {
       commune: '', quartier: '', localite: '', avenue: '', parcelleNo: '',
       proprietaireNom: '', telephone: '', typeOccupation: '', usageParcelle: '',
@@ -132,10 +161,46 @@ export default function FicheNew() {
     mode: 'onChange'
   });
 
+  useEffect(() => {
+    if (settings && activeIndex < 0) {
+      setStep(activeSteps.find((item) => item.id > step)?.id ?? activeSteps[activeSteps.length - 1].id);
+    }
+  }, [settings, activeIndex, activeSteps, step]);
+
+  const checkAddress = async (values: FicheFormValues): Promise<boolean> => {
+    setIsCheckingDuplicate(true);
+    try {
+      const res = await checkFicheDuplicate({
+        commune: values.commune,
+        quartier: values.quartier,
+        avenue: values.avenue,
+        parcelleNo: values.parcelleNo,
+      });
+      if (res.duplicate) {
+        toast({
+          variant: 'destructive',
+          title: 'Doublon détecté',
+          description: `Une fiche existe déjà pour cette adresse. N° Fiche: ${res.fiche?.ficheNo}`,
+        });
+        return false;
+      }
+      return true;
+    } catch {
+      toast({
+        variant: 'destructive',
+        title: 'Erreur de vérification',
+        description: 'Impossible de vérifier les doublons. Veuillez réessayer.',
+      });
+      return false;
+    } finally {
+      setIsCheckingDuplicate(false);
+    }
+  };
+
   const nextStep = async () => {
-    if (isCheckingDuplicate) return;
+    if (isCheckingDuplicate || activeIndex < 0) return;
     let fieldsToValidate: (keyof FicheFormValues)[] = [];
-    if (step === 0) fieldsToValidate = ['commune', 'quartier', 'localite', 'avenue', 'parcelleNo', 'proprietaireNom', 'telephone', 'typeOccupation', 'usageParcelle', 'superficie'];
+    if (step === 0) fieldsToValidate = ['commune', 'quartier', 'localite', 'avenue', 'parcelleNo', 'proprietaireNom', 'telephone', 'typeOccupation', 'usageParcelle', 'superficie', 'dateProspection'];
     if (step === 1) fieldsToValidate = ['plaqueExistante', 'statutPaiement', 'recuNo', 'sensibilisation'];
     if (step === 2) fieldsToValidate = ['hygiene_proprete', 'hygiene_ordures', 'hygiene_vegetation', 'hygiene_latrines', 'hygiene_eauxStagnantes'];
     if (step === 3) fieldsToValidate = ['dechets_modeElimination', 'dechets_bacOrdures', 'dechets_visibles'];
@@ -153,45 +218,17 @@ export default function FicheNew() {
       return;
     }
 
-    if (step === 0) {
-      const values = form.getValues();
-      setIsCheckingDuplicate(true);
-      try {
-        const res = await checkFicheDuplicate({
-          commune: values.commune,
-          quartier: values.quartier,
-          avenue: values.avenue,
-          parcelleNo: values.parcelleNo
-        });
-        if (res.duplicate) {
-          toast({
-            variant: 'destructive',
-            title: 'Doublon détecté',
-            description: `Une fiche existe déjà pour cette adresse. N° Fiche: ${res.fiche?.ficheNo}`,
-          });
-          setIsCheckingDuplicate(false);
-          return;
-        }
-      } catch (err) {
-        toast({
-          variant: 'destructive',
-          title: 'Erreur de vérification',
-          description: 'Impossible de vérifier les doublons. Veuillez réessayer.',
-        });
-        setIsCheckingDuplicate(false);
-        return;
-      }
-      setIsCheckingDuplicate(false);
-    }
-
-    setStep((s) => Math.min(s + 1, STEPS.length - 1));
+    if (step === 0 && !(await checkAddress(form.getValues()))) return;
+    setStep(activeSteps[activeIndex + 1].id);
   };
 
-  const prevStep = () => setStep((s) => Math.max(s - 1, 0));
+  const prevStep = () => {
+    if (activeIndex > 0) setStep(activeSteps[activeIndex - 1].id);
+  };
 
   const onInvalid = (errors: FieldErrors<FicheFormValues>) => {
     const fieldsByStep: (keyof FicheFormValues)[][] = [
-      ['commune', 'quartier', 'localite', 'avenue', 'parcelleNo', 'proprietaireNom', 'telephone', 'typeOccupation', 'usageParcelle', 'superficie'],
+      ['commune', 'quartier', 'localite', 'avenue', 'parcelleNo', 'proprietaireNom', 'telephone', 'typeOccupation', 'usageParcelle', 'superficie', 'dateProspection'],
       ['plaqueExistante', 'statutPaiement', 'sensibilisation'],
       ['hygiene_proprete', 'hygiene_ordures', 'hygiene_vegetation', 'hygiene_latrines', 'hygiene_eauxStagnantes'],
       ['dechets_modeElimination', 'dechets_bacOrdures', 'dechets_visibles'],
@@ -199,14 +236,16 @@ export default function FicheNew() {
       ['drainage_canal', 'drainage_risque'],
       [],
       [],
-      ['avis_global', 'avis_priorite', 'avis_attestation', 'dateProspection'],
+      ['avis_global', 'avis_priorite', 'avis_attestation'],
     ];
     const firstInvalidStep = fieldsByStep.findIndex(fields => fields.some(field => errors[field]));
     if (firstInvalidStep >= 0) setStep(firstInvalidStep);
     toast({ variant: 'destructive', title: 'Fiche incomplète', description: 'Vérifiez les champs indiqués avant l’enregistrement.' });
   };
 
-  const onSubmit = (data: FicheFormValues) => {
+  const onSubmit = async (data: FicheFormValues) => {
+    if (!settings || isCheckingDuplicate) return;
+    if (step === 0 && !(await checkAddress(data))) return;
     const input: FicheInput = {
       commune: data.commune,
       quartier: data.quartier,
@@ -219,55 +258,57 @@ export default function FicheNew() {
       superficie: typeof data.superficie === 'number' ? data.superficie : undefined,
       usageParcelle: data.usageParcelle,
       
-      plaqueExistante: data.plaqueExistante,
-      statutPaiement: data.statutPaiement,
-      recuNo: data.recuNo,
-      sensibilisation: data.sensibilisation,
+      ...(settings.adressage ? {
+        plaqueExistante: data.plaqueExistante,
+        statutPaiement: data.statutPaiement,
+        recuNo: data.recuNo,
+        sensibilisation: data.sensibilisation,
+      } : {}),
       
-      hygiene: {
+      hygiene: settings.hygiene ? {
         proprete: data.hygiene_proprete,
         ordures: data.hygiene_ordures,
         vegetation: data.hygiene_vegetation,
         latrines: data.hygiene_latrines,
         eauxStagnantes: data.hygiene_eauxStagnantes,
-      },
+      } : {},
       
-      dechets: {
+      dechets: settings.dechets ? {
         modeElimination: data.dechets_modeElimination,
         bacOrdures: data.dechets_bacOrdures,
         visibles: data.dechets_visibles,
-      },
+      } : {},
       
-      facade: {
+      facade: settings.facade ? {
         etat: data.facade_etat,
         cloture: data.facade_cloture,
         emplacement: data.facade_emplacement,
         emplacementAutre: data.facade_emplacementAutre,
         visibilite: data.facade_visibilite,
-      },
+      } : {},
       
-      drainage: {
+      drainage: settings.drainage ? {
         canal: data.drainage_canal,
         risque: data.drainage_risque,
-      },
+      } : {},
       
-      activites: [
+      activites: settings.activites ? [
         ...(data.activites || []),
         ...(data.activites_autres ? [data.activites_autres] : [])
-      ],
+      ] : [],
       
-      remarques: data.remarques,
+      remarques: settings.remarques ? data.remarques : undefined,
       
-      avis: {
+      avis: settings.avis ? {
         global: data.avis_global,
         priorite: data.avis_priorite,
         suivi: data.avis_suivi,
         attestation: data.avis_attestation,
-      },
+      } : {},
       
-      agentMatricule: data.agentMatricule,
-      chefRueNom: data.chefRueNom,
-      chefRueAvenue: data.chefRueAvenue,
+      agentMatricule: settings.avis ? data.agentMatricule : undefined,
+      chefRueNom: settings.avis ? data.chefRueNom : undefined,
+      chefRueAvenue: settings.avis ? data.chefRueAvenue : undefined,
       dateProspection: new Date(data.dateProspection).toISOString(),
     };
 
@@ -284,6 +325,9 @@ export default function FicheNew() {
 
   const StepIcon = STEPS[step].icon;
   const communeOptions = communes?.map(c => ({ label: c.nom, value: c.nom })) || [];
+
+  if (loadingSettings) return <DataSpinner label="Chargement des rubriques actives…" />;
+  if (settingsError || !settings) return <p role="alert" className="text-destructive">Impossible de charger les paramètres des rubriques. Réessayez avant de créer une fiche.</p>;
 
   return (
     <div className="max-w-3xl mx-auto space-y-6 pb-20">
@@ -305,11 +349,11 @@ export default function FicheNew() {
       </div>
 
       <div className="flex gap-1 overflow-x-auto pb-2 scrollbar-hide">
-        {STEPS.map((s, i) => (
+        {activeSteps.map((s, i) => (
           <div 
             key={s.id} 
             className={`h-2 flex-1 min-w-[30px] rounded-full transition-colors ${
-              i < step ? 'bg-primary' : i === step ? 'bg-primary/50' : 'bg-muted'
+              i < activeIndex ? 'bg-primary' : i === activeIndex ? 'bg-primary/50' : 'bg-muted'
             }`}
           />
         ))}
@@ -400,11 +444,18 @@ export default function FicheNew() {
                       <FormMessage />
                     </FormItem>
                   )} />
+                  <FormField control={form.control} name="dateProspection" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-base font-semibold">Date de prospection *</FormLabel>
+                      <FormControl><Input className="h-12" type="date" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
                 </div>
               </div>
 
               {/* ÉTAPE 1: Adressage */}
-              <div className={step === 1 ? 'block space-y-6' : 'hidden'}>
+              <div className={step === 1 && settings.adressage ? 'block space-y-6' : 'hidden'}>
                 <CustomRadioGroup form={form} name="plaqueExistante" label="Plaque existante *" options={plaqueExistanteOptions} />
                 <CustomRadioGroup form={form} name="statutPaiement" label="Paiement de la plaque *" options={paiementOptions} />
                 
@@ -420,7 +471,7 @@ export default function FicheNew() {
               </div>
 
               {/* ÉTAPE 2: Hygiène */}
-              <div className={step === 2 ? 'block space-y-6' : 'hidden'}>
+              <div className={step === 2 && settings.hygiene ? 'block space-y-6' : 'hidden'}>
                 <CustomRadioGroup form={form} name="hygiene_proprete" label="Propreté générale *" options={hygieneOptions} />
                 <CustomRadioGroup form={form} name="hygiene_ordures" label="Gestion des ordures ménagères *" options={hygieneOptions} />
                 <CustomRadioGroup form={form} name="hygiene_vegetation" label="Végétation non entretenue *" options={hygieneOptions} />
@@ -429,14 +480,14 @@ export default function FicheNew() {
               </div>
 
               {/* ÉTAPE 3: Déchets */}
-              <div className={step === 3 ? 'block space-y-6' : 'hidden'}>
+              <div className={step === 3 && settings.dechets ? 'block space-y-6' : 'hidden'}>
                 <CustomRadioGroup form={form} name="dechets_modeElimination" label="Mode d'élimination des déchets *" options={modeEliminationOptions} layout="col" />
                 <CustomRadioGroup form={form} name="dechets_bacOrdures" label="État du bac à ordures *" options={bacOrduresOptions} />
                 <CustomRadioGroup form={form} name="dechets_visibles" label="Déchets visibles devant la parcelle *" options={dechetsVisiblesOptions} />
               </div>
 
               {/* ÉTAPE 4: Façade */}
-              <div className={step === 4 ? 'block space-y-6' : 'hidden'}>
+              <div className={step === 4 && settings.facade ? 'block space-y-6' : 'hidden'}>
                 <CustomRadioGroup form={form} name="facade_etat" label="État de la façade *" options={etatFacadeOptions} />
                 <CustomRadioGroup form={form} name="facade_cloture" label="Type de clôture *" options={clotureOptions} />
                 <CustomRadioGroup form={form} name="facade_emplacement" label="Emplacement idéal de la plaque *" options={emplacementOptions} />
@@ -455,13 +506,13 @@ export default function FicheNew() {
               </div>
 
               {/* ÉTAPE 5: Drainage */}
-              <div className={step === 5 ? 'block space-y-6' : 'hidden'}>
+              <div className={step === 5 && settings.drainage ? 'block space-y-6' : 'hidden'}>
                 <CustomRadioGroup form={form} name="drainage_canal" label="Canalisation *" options={canalisationOptions} layout="col" />
                 <CustomRadioGroup form={form} name="drainage_risque" label="Risque d'érosion / inondation *" options={risqueOptions} />
               </div>
 
               {/* ÉTAPE 6: Activités */}
-              <div className={step === 6 ? 'block space-y-6' : 'hidden'}>
+              <div className={step === 6 && settings.activites ? 'block space-y-6' : 'hidden'}>
                 <CustomMultiSelect form={form} name="activites" label="Activités recensées (Sélection multiple)" options={activitesOptions} />
                 <FormField control={form.control} name="activites_autres" render={({ field }) => (
                   <FormItem>
@@ -473,7 +524,7 @@ export default function FicheNew() {
               </div>
 
               {/* ÉTAPE 7: Remarques */}
-              <div className={step === 7 ? 'block space-y-6' : 'hidden'}>
+              <div className={step === 7 && settings.remarques ? 'block space-y-6' : 'hidden'}>
                 <FormField control={form.control} name="remarques" render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-base font-semibold">Remarques et observations de l'agent</FormLabel>
@@ -484,23 +535,16 @@ export default function FicheNew() {
               </div>
 
               {/* ÉTAPE 8: Avis de l'agent */}
-              <div className={step === 8 ? 'block space-y-6' : 'hidden'}>
+              <div className={step === 8 && settings.avis ? 'block space-y-6' : 'hidden'}>
                 <CustomRadioGroup form={form} name="avis_global" label="Avis global *" options={avisGlobalOptions} />
                 <CustomRadioGroup form={form} name="avis_priorite" label="Priorité d'intervention *" options={prioriteOptions} />
                 <CustomMultiSelect form={form} name="avis_suivi" label="Actions de suivi recommandées" options={suiviOptions} />
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                <div className="mt-6">
                   <FormField control={form.control} name="agentMatricule" render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-base font-semibold">Matricule de l'agent</FormLabel>
                       <FormControl><Input className="h-12" placeholder="Ex: AGT-001" {...field} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                  <FormField control={form.control} name="dateProspection" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-base font-semibold">Date de prospection *</FormLabel>
-                      <FormControl><Input className="h-12" type="date" {...field} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )} />
@@ -553,17 +597,17 @@ export default function FicheNew() {
                   type="button" 
                   variant="outline" 
                   onClick={prevStep} 
-                  disabled={step === 0 || isCheckingDuplicate || createFiche.isPending}
+                  disabled={activeIndex <= 0 || isCheckingDuplicate || createFiche.isPending}
                   className="h-12 px-6"
                 >
                   <ChevronLeft className="mr-2 h-5 w-5" /> Précédent
                 </Button>
                 
-                {step < STEPS.length - 1 ? (
+                {activeIndex < activeSteps.length - 1 ? (
                   <Button 
                     type="button" 
                     onClick={nextStep} 
-                    disabled={step === 0 && (loadingCommunes || communesError) || isCheckingDuplicate}
+                    disabled={step === 0 && (loadingCommunes || communesError) || isCheckingDuplicate || activeIndex < 0}
                     className="h-12 px-6"
                   >
                     {isCheckingDuplicate ? (
@@ -576,7 +620,7 @@ export default function FicheNew() {
                   <Button 
                     type="submit" 
                     className="h-12 px-8 bg-green-600 hover:bg-green-700 text-white font-bold"
-                    disabled={createFiche.isPending}
+                    disabled={createFiche.isPending || isCheckingDuplicate || (step === 0 && (loadingCommunes || communesError))}
                   >
                     {createFiche.isPending ? (
                       <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Enregistrement...</>
