@@ -29,7 +29,7 @@ export function LocaliteEditor({ fiche }: { fiche: Fiche }) {
 
   return (
     <div className="no-print rounded-lg border bg-card p-4">
-      <label htmlFor="plaque-localite" className="block text-sm font-semibold mb-1">Localité — ligne LO/</label>
+      <label htmlFor="plaque-localite" className="block text-sm font-semibold mb-1">Localité — ligne LOC/</label>
       <p className="text-xs text-muted-foreground mb-3">Renseignez la localité réelle de cette parcelle. Elle est distincte du quartier ; aucune valeur du modèle n’est reprise automatiquement.</p>
       <div className="flex flex-col sm:flex-row gap-2">
         <Input id="plaque-localite" value={value} onChange={(event) => setValue(event.target.value)} maxLength={120} placeholder="Ex. Foire Agricole" className="sm:max-w-md" />

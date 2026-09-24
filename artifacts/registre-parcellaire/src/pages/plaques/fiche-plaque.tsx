@@ -36,7 +36,7 @@ export default function FichePlaque() {
     fiche.parcelleNo, fiche.avenue, fiche.localite ?? '', fiche.quartier, fiche.commune,
   ])).replace(/'/g, '%27');
   const legacyPlaque = Boolean(hasSvg && latestPlaque && (
-    !latestPlaque.svg.includes('id="plaque-layout-v7"')
+    !latestPlaque.svg.includes('id="plaque-layout-v8"')
     || !latestPlaque.svg.includes(`data-address-key="${addressKey}"`)
   ));
 

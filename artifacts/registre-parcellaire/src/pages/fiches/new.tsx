@@ -352,7 +352,7 @@ export default function FicheNew() {
                   </div>
                   <FormField control={form.control} name="localite" render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-base font-semibold">Localité (ligne LO/ de la plaque)</FormLabel>
+                      <FormLabel className="text-base font-semibold">Localité (ligne LOC/ de la plaque)</FormLabel>
                       <FormControl><Input className="h-12" placeholder="Ex. Foire Agricole — ne pas répéter le quartier" maxLength={120} {...field} /></FormControl>
                       <FormMessage />
                     </FormItem>
