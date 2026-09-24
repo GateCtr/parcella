@@ -1,4 +1,4 @@
-import { ArrowLeft, Printer } from 'lucide-react';
+import { ArrowLeft, Download, Printer } from 'lucide-react';
 import { Link } from 'wouter';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -19,14 +19,24 @@ export default function PlaqueModele() {
             </p>
           </div>
         </div>
-        <Button variant="outline" onClick={() => window.print()}>
-          <Printer className="mr-2 h-4 w-4" /> Imprimer le modèle
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={() => window.print()}>
+            <Printer className="mr-2 h-4 w-4" /> Imprimer / PDF
+          </Button>
+          <Button asChild variant="outline">
+            <a href={`${import.meta.env.BASE_URL}plaque-modele.svg`} download="plaque-modele-fictif.svg">
+              <Download className="mr-2 h-4 w-4" /> Télécharger SVG vectoriel
+            </a>
+          </Button>
+        </div>
       </div>
 
       <div className="bg-card border rounded-xl shadow-sm overflow-hidden p-6 no-print">
         <p className="text-sm text-muted-foreground">
           Cet aperçu ne représente aucune parcelle enregistrée ; son QR indique seulement « exemple fictif ». Sur une vraie plaque générée après validation de la fiche, le code QR ouvre la fiche réservée aux agents connectés.
+        </p>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Pour obtenir un PDF, choisissez « Enregistrer au format PDF » dans la fenêtre d’impression. Pour une impression professionnelle ou un agrandissement, utilisez le SVG vectoriel plutôt qu’un PNG.
         </p>
       </div>
 

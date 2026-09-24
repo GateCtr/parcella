@@ -112,17 +112,23 @@ export default function FichePlaque() {
                 </Button>
               )}
               <Button variant="outline" onClick={() => window.print()}>
-                <Printer className="mr-2 h-4 w-4" /> Imprimer
+                <Printer className="mr-2 h-4 w-4" /> Imprimer / PDF
               </Button>
               {!legacyPlaque && (
                 <Button variant="outline" onClick={handleDownload} data-testid="button-download-plaque">
-                  <Download className="mr-2 h-4 w-4" /> Télécharger SVG
+                  <Download className="mr-2 h-4 w-4" /> Télécharger SVG vectoriel
                 </Button>
               )}
             </>
           )}
         </div>
       </div>
+
+      {fiche.statutFiche === 'validee' && hasSvg && !legacyPlaque && (
+        <p className="no-print text-sm text-muted-foreground">
+          PDF : choisissez « Enregistrer au format PDF » dans la fenêtre d’impression. Pour une imprimerie ou un grand format, téléchargez le SVG vectoriel, qui reste net à toute taille.
+        </p>
+      )}
 
        {legacyPlaque && fiche.statutFiche === 'validee' && (
          <Alert className="no-print">
