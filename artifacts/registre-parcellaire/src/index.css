@@ -131,3 +131,61 @@
     @apply font-sans antialiased bg-background text-foreground;
   }
 }
+
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  
+  /* Hide sidebars, navigation, scrollbars, top bars */
+  #sidebar, .no-print, header, nav, aside {
+    display: none !important;
+  }
+
+  /* Reset application main content area padding/margins for full page usage */
+  #root, .dashboard-shell, .dashboard-content, .dashboard-shell main {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow: visible !important;
+    height: auto !important;
+    min-height: 0 !important;
+    display: block !important;
+  }
+
+  .print\:border-none {
+    border: none !important;
+  }
+  
+  .print\:shadow-none {
+    box-shadow: none !important;
+  }
+
+  .print\:p-0 {
+    padding: 0 !important;
+  }
+  
+  .print\:pb-0 {
+    padding-bottom: 0 !important;
+  }
+  
+  /* Make sure container expands correctly */
+  .print-container {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+  }
+
+  /* Ensure page breaks don't happen inside important data blocks */
+  .break-inside-avoid {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  @page {
+    size: A4;
+    margin: 1.5cm;
+  }
+}

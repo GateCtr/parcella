@@ -1,62 +1,111 @@
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, type FieldErrors } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useLocation } from 'wouter';
-import { useCreateFiche, useListCommunes, checkFicheDuplicate } from '@workspace/api-client-react';
+import { useCreateFiche, useListCommunes, checkFicheDuplicate, FicheInput } from '@workspace/api-client-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent } from '@/components/ui/card';
 import { DataSpinner } from '@/components/data-spinner';
-import { MapPin, User, Home, Sparkles, Trash2, LayoutTemplate, Waves, ClipboardCheck, CheckCircle2, ChevronRight, ChevronLeft } from 'lucide-react';
-import { FicheInput } from '@workspace/api-client-react';
+import { MapPin, Info, Sparkles, Trash2, LayoutTemplate, Waves, Briefcase, FileText, ClipboardCheck, ChevronRight, ChevronLeft, CheckCircle2, Loader2 } from 'lucide-react';
+import { format } from 'date-fns';
+import { 
+  typeOccupationOptions, usageParcelleOptions, plaqueExistanteOptions, paiementOptions,
+  sensibilisationOptions, hygieneOptions, modeEliminationOptions, bacOrduresOptions, 
+  dechetsVisiblesOptions, etatFacadeOptions, clotureOptions, emplacementOptions, 
+  visibiliteOptions, canalisationOptions, risqueOptions, activitesOptions, 
+  avisGlobalOptions, prioriteOptions, suiviOptions 
+} from '@/components/fiche/constants';
+import { CustomRadioGroup, CustomMultiSelect, CustomSelect } from '@/components/fiche/form-helpers';
 
 const ficheSchema = z.object({
   commune: z.string().min(1, 'Requis'),
   quartier: z.string().min(1, 'Requis'),
   avenue: z.string().min(1, 'Requis'),
   parcelleNo: z.string().min(1, 'Requis'),
+  plaqueNo: z.string().optional(),
   
   proprietaireNom: z.string().min(1, 'Requis'),
   telephone: z.string().min(1, 'Requis'),
   typeOccupation: z.string().min(1, 'Requis'),
   
+  superficie: z.union([
+    z.string().transform(v => (v === '' ? undefined : Number(v))),
+    z.number()
+  ]).refine(val => val === undefined || (!isNaN(val) && val > 0), "Doit être > 0").optional(),
+  
   usageParcelle: z.string().min(1, 'Requis'),
-  superficie: z.coerce.number().optional(),
-  activites: z.string().optional(), // We'll split this by comma later
-  
-  // JSON sections (using text inputs for simplicity in this frontend)
-  hygieneNote: z.string().optional(),
-  dechetsNote: z.string().optional(),
-  facadeNote: z.string().optional(),
-  drainageNote: z.string().optional(),
-  
+
+  plaqueExistante: z.string().min(1, 'Requis'),
+  statutPaiement: z.string().min(1, 'Requis'),
+  recuNo: z.string().optional(),
+  sensibilisation: z.string().min(1, 'Requis'),
+
+  hygiene_proprete: z.string().min(1, 'Requis'),
+  hygiene_ordures: z.string().min(1, 'Requis'),
+  hygiene_vegetation: z.string().min(1, 'Requis'),
+  hygiene_latrines: z.string().min(1, 'Requis'),
+  hygiene_eauxStagnantes: z.string().min(1, 'Requis'),
+
+  dechets_modeElimination: z.string().min(1, 'Requis'),
+  dechets_bacOrdures: z.string().min(1, 'Requis'),
+  dechets_visibles: z.string().min(1, 'Requis'),
+
+  facade_etat: z.string().min(1, 'Requis'),
+  facade_cloture: z.string().min(1, 'Requis'),
+  facade_emplacement: z.string().min(1, 'Requis'),
+  facade_emplacementAutre: z.string().optional(),
+  facade_visibilite: z.string().min(1, 'Requis'),
+
+  drainage_canal: z.string().min(1, 'Requis'),
+  drainage_risque: z.string().min(1, 'Requis'),
+
+  activites: z.array(z.string()).optional(),
+  activites_autres: z.string().optional(),
+
+  remarques: z.string().optional(),
+
+  avis_global: z.string().min(1, 'Requis'),
+  avis_priorite: z.string().min(1, 'Requis'),
+  avis_suivi: z.array(z.string()).optional(),
+  avis_attestation: z.boolean().refine(val => val === true, "La certification est requise pour enregistrer."),
+
   agentMatricule: z.string().optional(),
   chefRueNom: z.string().optional(),
+  chefRueAvenue: z.string().optional(),
   dateProspection: z.string().min(1, 'Requis'),
-  remarques: z.string().optional(),
+}).superRefine((data, ctx) => {
+  if (data.facade_emplacement === 'autre' && (!data.facade_emplacementAutre || !data.facade_emplacementAutre.trim())) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Veuillez préciser l\'emplacement',
+      path: ['facade_emplacementAutre'],
+    });
+  }
 });
 
 type FicheFormValues = z.infer<typeof ficheSchema>;
 
 const STEPS = [
-  { id: 0, title: 'Localisation', icon: MapPin },
-  { id: 1, title: 'Propriétaire', icon: User },
-  { id: 2, title: 'Parcelle', icon: Home },
-  { id: 3, title: 'Hygiène', icon: Sparkles },
-  { id: 4, title: 'Déchets', icon: Trash2 },
-  { id: 5, title: 'Façade', icon: LayoutTemplate },
-  { id: 6, title: 'Drainage', icon: Waves },
-  { id: 7, title: 'Administration', icon: ClipboardCheck },
-  { id: 8, title: 'Récapitulatif', icon: CheckCircle2 },
+  { id: 0, title: 'Identification', icon: MapPin },
+  { id: 1, title: 'Adressage', icon: Info },
+  { id: 2, title: 'Hygiène', icon: Sparkles },
+  { id: 3, title: 'Déchets', icon: Trash2 },
+  { id: 4, title: 'Façade', icon: LayoutTemplate },
+  { id: 5, title: 'Drainage', icon: Waves },
+  { id: 6, title: 'Activités', icon: Briefcase },
+  { id: 7, title: 'Remarques', icon: FileText },
+  { id: 8, title: 'Avis & Admin.', icon: ClipboardCheck },
 ];
 
 export default function FicheNew() {
   const [step, setStep] = useState(0);
+  const [isCheckingDuplicate, setIsCheckingDuplicate] = useState(false);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   
@@ -66,31 +115,48 @@ export default function FicheNew() {
   const form = useForm<FicheFormValues>({
     resolver: zodResolver(ficheSchema),
     defaultValues: {
-      commune: '', quartier: '', avenue: '', parcelleNo: '',
-      proprietaireNom: '', telephone: '', typeOccupation: 'proprietaire',
-      usageParcelle: 'residentiel',
-      dateProspection: new Date().toISOString().split('T')[0],
-      activites: '',
-      hygieneNote: '', dechetsNote: '', facadeNote: '', drainageNote: '',
-      agentMatricule: '', chefRueNom: '', remarques: ''
+      commune: '', quartier: '', avenue: '', parcelleNo: '', plaqueNo: '',
+      proprietaireNom: '', telephone: '', typeOccupation: '', usageParcelle: '',
+      superficie: '' as any,
+      plaqueExistante: '', statutPaiement: '', recuNo: '', sensibilisation: '',
+      hygiene_proprete: '', hygiene_ordures: '', hygiene_vegetation: '', hygiene_latrines: '', hygiene_eauxStagnantes: '',
+      dechets_modeElimination: '', dechets_bacOrdures: '', dechets_visibles: '',
+      facade_etat: '', facade_cloture: '', facade_emplacement: '', facade_emplacementAutre: '', facade_visibilite: '',
+      drainage_canal: '', drainage_risque: '',
+      activites: [], activites_autres: '',
+      remarques: '',
+      avis_global: '', avis_priorite: '', avis_suivi: [],
+      avis_attestation: false,
+      agentMatricule: '', chefRueNom: '', chefRueAvenue: '',
+      dateProspection: new Date().toISOString().split('T')[0]
     },
     mode: 'onChange'
   });
 
   const nextStep = async () => {
-    // Validate current step fields
-    let fieldsToValidate: any[] = [];
-    if (step === 0) fieldsToValidate = ['commune', 'quartier', 'avenue', 'parcelleNo'];
-    if (step === 1) fieldsToValidate = ['proprietaireNom', 'telephone', 'typeOccupation'];
-    if (step === 2) fieldsToValidate = ['usageParcelle'];
-    if (step === 7) fieldsToValidate = ['dateProspection'];
+    if (isCheckingDuplicate) return;
+    let fieldsToValidate: (keyof FicheFormValues)[] = [];
+    if (step === 0) fieldsToValidate = ['commune', 'quartier', 'avenue', 'parcelleNo', 'proprietaireNom', 'telephone', 'typeOccupation', 'usageParcelle', 'superficie'];
+    if (step === 1) fieldsToValidate = ['plaqueExistante', 'statutPaiement', 'recuNo', 'sensibilisation'];
+    if (step === 2) fieldsToValidate = ['hygiene_proprete', 'hygiene_ordures', 'hygiene_vegetation', 'hygiene_latrines', 'hygiene_eauxStagnantes'];
+    if (step === 3) fieldsToValidate = ['dechets_modeElimination', 'dechets_bacOrdures', 'dechets_visibles'];
+    if (step === 4) fieldsToValidate = ['facade_etat', 'facade_cloture', 'facade_emplacement', 'facade_emplacementAutre', 'facade_visibilite'];
+    if (step === 5) fieldsToValidate = ['drainage_canal', 'drainage_risque'];
+    if (step === 6) fieldsToValidate = ['activites', 'activites_autres'];
+    if (step === 7) fieldsToValidate = ['remarques'];
 
-    const isValid = await form.trigger(fieldsToValidate as any);
-    if (!isValid) return;
+    if (fieldsToValidate.length > 0) {
+      const isValid = await form.trigger(fieldsToValidate);
+      if (!isValid) return;
+    }
+    if (step === 4 && form.getValues('facade_emplacement') === 'autre' && !form.getValues('facade_emplacementAutre')?.trim()) {
+      form.setError('facade_emplacementAutre', { message: "Veuillez préciser l'emplacement" });
+      return;
+    }
 
-    // Check duplicate on step 0
     if (step === 0) {
       const values = form.getValues();
+      setIsCheckingDuplicate(true);
       try {
         const res = await checkFicheDuplicate({
           commune: values.commune,
@@ -104,11 +170,19 @@ export default function FicheNew() {
             title: 'Doublon détecté',
             description: `Une fiche existe déjà pour cette adresse. N° Fiche: ${res.fiche?.ficheNo}`,
           });
+          setIsCheckingDuplicate(false);
           return;
         }
       } catch (err) {
-        // Just proceed if error
+        toast({
+          variant: 'destructive',
+          title: 'Erreur de vérification',
+          description: 'Impossible de vérifier les doublons. Veuillez réessayer.',
+        });
+        setIsCheckingDuplicate(false);
+        return;
       }
+      setIsCheckingDuplicate(false);
     }
 
     setStep((s) => Math.min(s + 1, STEPS.length - 1));
@@ -116,26 +190,86 @@ export default function FicheNew() {
 
   const prevStep = () => setStep((s) => Math.max(s - 1, 0));
 
+  const onInvalid = (errors: FieldErrors<FicheFormValues>) => {
+    const fieldsByStep: (keyof FicheFormValues)[][] = [
+      ['commune', 'quartier', 'avenue', 'parcelleNo', 'proprietaireNom', 'telephone', 'typeOccupation', 'usageParcelle', 'superficie'],
+      ['plaqueExistante', 'statutPaiement', 'sensibilisation'],
+      ['hygiene_proprete', 'hygiene_ordures', 'hygiene_vegetation', 'hygiene_latrines', 'hygiene_eauxStagnantes'],
+      ['dechets_modeElimination', 'dechets_bacOrdures', 'dechets_visibles'],
+      ['facade_etat', 'facade_cloture', 'facade_emplacement', 'facade_emplacementAutre', 'facade_visibilite'],
+      ['drainage_canal', 'drainage_risque'],
+      [],
+      [],
+      ['avis_global', 'avis_priorite', 'avis_attestation', 'dateProspection'],
+    ];
+    const firstInvalidStep = fieldsByStep.findIndex(fields => fields.some(field => errors[field]));
+    if (firstInvalidStep >= 0) setStep(firstInvalidStep);
+    toast({ variant: 'destructive', title: 'Fiche incomplète', description: 'Vérifiez les champs indiqués avant l’enregistrement.' });
+  };
+
   const onSubmit = (data: FicheFormValues) => {
     const input: FicheInput = {
       commune: data.commune,
       quartier: data.quartier,
       avenue: data.avenue,
       parcelleNo: data.parcelleNo,
+      plaqueNo: data.plaqueNo,
       proprietaireNom: data.proprietaireNom,
       telephone: data.telephone,
       typeOccupation: data.typeOccupation,
+      superficie: typeof data.superficie === 'number' ? data.superficie : undefined,
       usageParcelle: data.usageParcelle,
-      superficie: data.superficie,
-      dateProspection: new Date(data.dateProspection).toISOString(),
+      
+      plaqueExistante: data.plaqueExistante,
+      statutPaiement: data.statutPaiement,
+      recuNo: data.recuNo,
+      sensibilisation: data.sensibilisation,
+      
+      hygiene: {
+        proprete: data.hygiene_proprete,
+        ordures: data.hygiene_ordures,
+        vegetation: data.hygiene_vegetation,
+        latrines: data.hygiene_latrines,
+        eauxStagnantes: data.hygiene_eauxStagnantes,
+      },
+      
+      dechets: {
+        modeElimination: data.dechets_modeElimination,
+        bacOrdures: data.dechets_bacOrdures,
+        visibles: data.dechets_visibles,
+      },
+      
+      facade: {
+        etat: data.facade_etat,
+        cloture: data.facade_cloture,
+        emplacement: data.facade_emplacement,
+        emplacementAutre: data.facade_emplacementAutre,
+        visibilite: data.facade_visibilite,
+      },
+      
+      drainage: {
+        canal: data.drainage_canal,
+        risque: data.drainage_risque,
+      },
+      
+      activites: [
+        ...(data.activites || []),
+        ...(data.activites_autres ? [data.activites_autres] : [])
+      ],
+      
+      remarques: data.remarques,
+      
+      avis: {
+        global: data.avis_global,
+        priorite: data.avis_priorite,
+        suivi: data.avis_suivi,
+        attestation: data.avis_attestation,
+      },
+      
       agentMatricule: data.agentMatricule,
       chefRueNom: data.chefRueNom,
-      remarques: data.remarques,
-      activites: data.activites ? data.activites.split(',').map(s => s.trim()) : [],
-      hygiene: data.hygieneNote ? { notes: data.hygieneNote } : undefined,
-      dechets: data.dechetsNote ? { notes: data.dechetsNote } : undefined,
-      facade: data.facadeNote ? { notes: data.facadeNote } : undefined,
-      drainage: data.drainageNote ? { notes: data.drainageNote } : undefined,
+      chefRueAvenue: data.chefRueAvenue,
+      dateProspection: new Date(data.dateProspection).toISOString(),
     };
 
     createFiche.mutate({ data: input }, {
@@ -150,13 +284,36 @@ export default function FicheNew() {
   };
 
   const StepIcon = STEPS[step].icon;
+  const communeOptions = communes?.map(c => ({ label: c.nom, value: c.nom })) || [];
+
+  const communeVal = form.watch('commune');
+  const dateProspectionVal = form.watch('dateProspection');
+  const d = dateProspectionVal ? new Date(dateProspectionVal) : new Date();
+  const quarter = Math.floor(d.getMonth() / 3) + 1;
+  const year = d.getFullYear();
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">Nouvelle fiche de recensement</h2>
-          <p className="text-muted-foreground text-sm">Étape {step + 1} sur {STEPS.length}: {STEPS[step].title}</p>
+    <div className="max-w-3xl mx-auto space-y-6 pb-20">
+      
+      {/* HEADER OFFICIEL */}
+      <div className="flex flex-col items-center justify-center text-center font-serif mb-6 bg-white p-6 border rounded-xl shadow-sm text-black">
+        <p className="font-bold text-sm tracking-wide">RÉPUBLIQUE DÉMOCRATIQUE DU CONGO</p>
+        <p className="font-bold text-sm tracking-wide">VILLE PROVINCE DE KINSHASA</p>
+        <p className="font-bold text-sm tracking-wide uppercase">COMMUNE DE {communeVal || '________________'}</p>
+        
+        <h1 className="text-xl md:text-2xl font-bold mt-4 mb-2 border-y-4 border-double border-black py-3 w-full max-w-2xl">
+          FICHE DE PROSPECTION PARCELLAIRE
+        </h1>
+        
+        <div className="flex justify-between items-end w-full mt-6 text-left">
+          <div className="space-y-1">
+            <p className="text-lg">N° Fiche: <strong className="text-xl font-mono">[Attribué après enregistrement]</strong></p>
+            <p>Date: <strong>{dateProspectionVal ? format(new Date(dateProspectionVal), "dd/MM/yyyy") : '____/____/______'}</strong></p>
+            <p>Trimestre: <strong>T{quarter} / {year}</strong></p>
+          </div>
+          <div className="w-24 h-24 border-2 border-dashed border-gray-400 flex flex-col items-center justify-center text-gray-400 text-xs text-center p-2 bg-gray-50/50">
+            Espace réservé<br/>Code QR
+          </div>
         </div>
       </div>
 
@@ -171,256 +328,274 @@ export default function FicheNew() {
         ))}
       </div>
 
-      <Card className="border-t-4" style={{ borderTopColor: 'hsl(var(--primary))' }}>
-        <CardContent className="p-6 md:p-8">
-          <div className="flex items-center gap-3 mb-8 pb-4 border-b">
+      <Card className="border-t-4 shadow-md" style={{ borderTopColor: 'hsl(var(--primary))' }}>
+        <CardContent className="p-4 sm:p-6 md:p-8">
+          <div className="flex items-center gap-3 mb-6 pb-4 border-b">
             <div className="bg-primary/10 text-primary p-2 rounded-lg">
               <StepIcon className="h-6 w-6" />
             </div>
-            <h3 className="text-xl font-semibold">{STEPS[step].title}</h3>
+            <h3 className="text-xl font-bold uppercase tracking-tight">{step + 1}. {STEPS[step].title}</h3>
           </div>
 
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <form onSubmit={form.handleSubmit(onSubmit, onInvalid)} className="space-y-8">
               
-              {/* ÉTAPE 0: Localisation */}
-              <div className={step === 0 ? 'block space-y-4' : 'hidden'}>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField control={form.control} name="commune" render={({ field }) => (
+              {/* ÉTAPE 0: Identification */}
+              <div className={step === 0 ? 'block space-y-6' : 'hidden'}>
+                <div className="space-y-4 bg-muted/20 p-4 rounded-lg border">
+                  <h4 className="font-semibold border-b pb-2">Localisation</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      {loadingCommunes ? (
+                        <DataSpinner compact label="Chargement..." />
+                      ) : (
+                        <CustomSelect form={form} name="commune" label="Commune *" options={communeOptions} />
+                      )}
+                      {communesError && <p className="text-sm text-destructive mt-1">Erreur de chargement</p>}
+                    </div>
+                    <FormField control={form.control} name="quartier" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-base font-semibold">Quartier *</FormLabel>
+                        <FormControl><Input className="h-12" placeholder="Nom du quartier" {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <FormField control={form.control} name="avenue" render={({ field }) => (
+                      <FormItem className="md:col-span-2">
+                        <FormLabel className="text-base font-semibold">Avenue / Rue *</FormLabel>
+                        <FormControl><Input className="h-12" placeholder="Nom de l'avenue" {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="parcelleNo" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-base font-semibold">N° Parcelle *</FormLabel>
+                        <FormControl><Input className="h-12" placeholder="N°" {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                  </div>
+                  <FormField control={form.control} name="plaqueNo" render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Commune</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value} disabled={loadingCommunes || communesError}>
-                        <FormControl>
-                          <SelectTrigger><SelectValue placeholder="Sélectionner..." /></SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {communes?.map(c => (
-                            <SelectItem key={c.nom} value={c.nom}>{c.nom}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {loadingCommunes && <DataSpinner compact label="Chargement des communes…" />}
-                      {communesError && <p role="alert" className="text-sm text-destructive">Impossible de charger les communes.</p>}
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                  <FormField control={form.control} name="quartier" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Quartier</FormLabel>
-                      <FormControl><Input placeholder="Nom du quartier" {...field} /></FormControl>
+                      <FormLabel className="text-base font-semibold">N° Plaque (Si existante)</FormLabel>
+                      <FormControl><Input className="h-12" placeholder="Ex: A123..." {...field} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )} />
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField control={form.control} name="avenue" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Avenue / Rue</FormLabel>
-                      <FormControl><Input placeholder="Nom de l'avenue" {...field} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                  <FormField control={form.control} name="parcelleNo" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Numéro de parcelle</FormLabel>
-                      <FormControl><Input placeholder="N°" {...field} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                </div>
-              </div>
 
-              {/* ÉTAPE 1: Propriétaire */}
-              <div className={step === 1 ? 'block space-y-4' : 'hidden'}>
-                <FormField control={form.control} name="proprietaireNom" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nom complet du propriétaire</FormLabel>
-                    <FormControl><Input placeholder="Nom, Post-nom, Prénom" {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-4 bg-muted/20 p-4 rounded-lg border">
+                  <h4 className="font-semibold border-b pb-2">Propriétaire et Parcelle</h4>
+                  <FormField control={form.control} name="proprietaireNom" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-base font-semibold">Nom du propriétaire *</FormLabel>
+                      <FormControl><Input className="h-12" placeholder="Nom complet" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
                   <FormField control={form.control} name="telephone" render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Téléphone de contact</FormLabel>
-                      <FormControl><Input placeholder="+243..." {...field} /></FormControl>
+                      <FormLabel className="text-base font-semibold">Téléphone *</FormLabel>
+                      <FormControl><Input className="h-12" placeholder="+243..." {...field} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )} />
-                  <FormField control={form.control} name="typeOccupation" render={({ field }) => (
+                  
+                  <CustomRadioGroup form={form} name="typeOccupation" label="Occupation *" options={typeOccupationOptions} />
+                  <CustomRadioGroup form={form} name="usageParcelle" label="Usage de la parcelle *" options={usageParcelleOptions} />
+                  
+                  <FormField control={form.control} name="superficie" render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Type d'occupation</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger><SelectValue placeholder="Sélectionner..." /></SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="proprietaire">Propriétaire résident</SelectItem>
-                          <SelectItem value="locataire">Locataire</SelectItem>
-                          <SelectItem value="autre">Autre</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <FormLabel className="text-base font-semibold">Superficie (m²)</FormLabel>
+                      <FormControl><Input className="h-12" type="number" placeholder="Ex: 500 (Optionnel)" {...field} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )} />
                 </div>
               </div>
 
-              {/* ÉTAPE 2: Parcelle */}
-              <div className={step === 2 ? 'block space-y-4' : 'hidden'}>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField control={form.control} name="usageParcelle" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Usage principal</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger><SelectValue placeholder="Sélectionner..." /></SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="residentiel">Résidentiel</SelectItem>
-                          <SelectItem value="commercial">Commercial</SelectItem>
-                          <SelectItem value="mixte">Mixte (Résidentiel + Commercial)</SelectItem>
-                          <SelectItem value="industriel">Industriel</SelectItem>
-                          <SelectItem value="institutionnel">Institutionnel (École, Église...)</SelectItem>
-                          <SelectItem value="vide">Parcelle vide</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                  <FormField control={form.control} name="superficie" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Superficie estimée (m²)</FormLabel>
-                      <FormControl><Input type="number" placeholder="Ex: 500" {...field} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                </div>
-                <FormField control={form.control} name="activites" render={({ field }) => (
+              {/* ÉTAPE 1: Adressage */}
+              <div className={step === 1 ? 'block space-y-6' : 'hidden'}>
+                <CustomRadioGroup form={form} name="plaqueExistante" label="Plaque existante *" options={plaqueExistanteOptions} />
+                <CustomRadioGroup form={form} name="statutPaiement" label="Paiement de la plaque *" options={paiementOptions} />
+                
+                <FormField control={form.control} name="recuNo" render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Activités commerciales (séparées par virgule)</FormLabel>
-                    <FormControl><Input placeholder="Boutique, Pharmacie, Terrasse..." {...field} /></FormControl>
+                    <FormLabel className="text-base font-semibold">Numéro de reçu</FormLabel>
+                    <FormControl><Input className="h-12" placeholder="N° du reçu de paiement" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+
+                <CustomRadioGroup form={form} name="sensibilisation" label="Niveau de sensibilisation *" options={sensibilisationOptions} />
+              </div>
+
+              {/* ÉTAPE 2: Hygiène */}
+              <div className={step === 2 ? 'block space-y-6' : 'hidden'}>
+                <CustomRadioGroup form={form} name="hygiene_proprete" label="Propreté générale *" options={hygieneOptions} />
+                <CustomRadioGroup form={form} name="hygiene_ordures" label="Gestion des ordures ménagères *" options={hygieneOptions} />
+                <CustomRadioGroup form={form} name="hygiene_vegetation" label="Végétation non entretenue *" options={hygieneOptions} />
+                <CustomRadioGroup form={form} name="hygiene_latrines" label="Salubrité des latrines *" options={hygieneOptions} />
+                <CustomRadioGroup form={form} name="hygiene_eauxStagnantes" label="Eaux stagnantes *" options={hygieneOptions} />
+              </div>
+
+              {/* ÉTAPE 3: Déchets */}
+              <div className={step === 3 ? 'block space-y-6' : 'hidden'}>
+                <CustomRadioGroup form={form} name="dechets_modeElimination" label="Mode d'élimination des déchets *" options={modeEliminationOptions} layout="col" />
+                <CustomRadioGroup form={form} name="dechets_bacOrdures" label="État du bac à ordures *" options={bacOrduresOptions} />
+                <CustomRadioGroup form={form} name="dechets_visibles" label="Déchets visibles devant la parcelle *" options={dechetsVisiblesOptions} />
+              </div>
+
+              {/* ÉTAPE 4: Façade */}
+              <div className={step === 4 ? 'block space-y-6' : 'hidden'}>
+                <CustomRadioGroup form={form} name="facade_etat" label="État de la façade *" options={etatFacadeOptions} />
+                <CustomRadioGroup form={form} name="facade_cloture" label="Type de clôture *" options={clotureOptions} />
+                <CustomRadioGroup form={form} name="facade_emplacement" label="Emplacement idéal de la plaque *" options={emplacementOptions} />
+                
+                {form.watch('facade_emplacement') === 'autre' && (
+                  <FormField control={form.control} name="facade_emplacementAutre" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-base font-semibold">Préciser l'emplacement *</FormLabel>
+                      <FormControl><Input className="h-12" placeholder="Autre emplacement" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                )}
+                
+                <CustomRadioGroup form={form} name="facade_visibilite" label="Visibilité *" options={visibiliteOptions} />
+              </div>
+
+              {/* ÉTAPE 5: Drainage */}
+              <div className={step === 5 ? 'block space-y-6' : 'hidden'}>
+                <CustomRadioGroup form={form} name="drainage_canal" label="Canalisation *" options={canalisationOptions} layout="col" />
+                <CustomRadioGroup form={form} name="drainage_risque" label="Risque d'érosion / inondation *" options={risqueOptions} />
+              </div>
+
+              {/* ÉTAPE 6: Activités */}
+              <div className={step === 6 ? 'block space-y-6' : 'hidden'}>
+                <CustomMultiSelect form={form} name="activites" label="Activités recensées (Sélection multiple)" options={activitesOptions} />
+                <FormField control={form.control} name="activites_autres" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-base font-semibold">Autres activités</FormLabel>
+                    <FormControl><Input className="h-12" placeholder="Précisez si autre..." {...field} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />
               </div>
 
-              {/* ÉTAPES 3-6: Environnement (simplifiées avec Textarea) */}
-              <div className={step === 3 ? 'block space-y-4' : 'hidden'}>
-                <FormField control={form.control} name="hygieneNote" render={({ field }) => (
+              {/* ÉTAPE 7: Remarques */}
+              <div className={step === 7 ? 'block space-y-6' : 'hidden'}>
+                <FormField control={form.control} name="remarques" render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Observations sur l'hygiène</FormLabel>
-                    <FormControl><Textarea placeholder="Présence de latrines, état de propreté..." rows={5} {...field} /></FormControl>
-                  </FormItem>
-                )} />
-              </div>
-              <div className={step === 4 ? 'block space-y-4' : 'hidden'}>
-                <FormField control={form.control} name="dechetsNote" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Gestion des déchets</FormLabel>
-                    <FormControl><Textarea placeholder="Mode d'évacuation, abonnement service poubelle..." rows={5} {...field} /></FormControl>
-                  </FormItem>
-                )} />
-              </div>
-              <div className={step === 5 ? 'block space-y-4' : 'hidden'}>
-                <FormField control={form.control} name="facadeNote" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>État de la façade et clôture</FormLabel>
-                    <FormControl><Textarea placeholder="Peinture, type de clôture, empiètement..." rows={5} {...field} /></FormControl>
-                  </FormItem>
-                )} />
-              </div>
-              <div className={step === 6 ? 'block space-y-4' : 'hidden'}>
-                <FormField control={form.control} name="drainageNote" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Système de drainage</FormLabel>
-                    <FormControl><Textarea placeholder="Caniveaux, stagnation d'eau..." rows={5} {...field} /></FormControl>
+                    <FormLabel className="text-base font-semibold">Remarques et observations de l'agent</FormLabel>
+                    <FormControl><Textarea className="min-h-[160px] resize-none" placeholder="Saisissez vos observations ici..." {...field} /></FormControl>
+                    <FormMessage />
                   </FormItem>
                 )} />
               </div>
 
-              {/* ÉTAPE 7: Administration */}
-              <div className={step === 7 ? 'block space-y-4' : 'hidden'}>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* ÉTAPE 8: Avis de l'agent */}
+              <div className={step === 8 ? 'block space-y-6' : 'hidden'}>
+                <CustomRadioGroup form={form} name="avis_global" label="Avis global *" options={avisGlobalOptions} />
+                <CustomRadioGroup form={form} name="avis_priorite" label="Priorité d'intervention *" options={prioriteOptions} />
+                <CustomMultiSelect form={form} name="avis_suivi" label="Actions de suivi recommandées" options={suiviOptions} />
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
                   <FormField control={form.control} name="agentMatricule" render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Matricule de l'agent</FormLabel>
-                      <FormControl><Input placeholder="AGT-XXX" {...field} /></FormControl>
+                      <FormLabel className="text-base font-semibold">Matricule de l'agent</FormLabel>
+                      <FormControl><Input className="h-12" placeholder="Ex: AGT-001" {...field} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )} />
                   <FormField control={form.control} name="dateProspection" render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Date de la visite</FormLabel>
-                      <FormControl><Input type="date" {...field} /></FormControl>
+                      <FormLabel className="text-base font-semibold">Date de prospection *</FormLabel>
+                      <FormControl><Input className="h-12" type="date" {...field} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )} />
                 </div>
-                <FormField control={form.control} name="chefRueNom" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nom du Chef de rue (Témoin)</FormLabel>
-                    <FormControl><Input placeholder="Nom du témoin" {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name="remarques" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Remarques générales</FormLabel>
-                    <FormControl><Textarea placeholder="Note supplémentaire pour l'administration..." {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-              </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField control={form.control} name="chefRueNom" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-base font-semibold">Nom du Chef de rue</FormLabel>
+                      <FormControl><Input className="h-12" placeholder="Nom du chef" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="chefRueAvenue" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-base font-semibold">Avenue du Chef de rue</FormLabel>
+                      <FormControl><Input className="h-12" placeholder="Nom de l'avenue" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                </div>
 
-              {/* ÉTAPE 8: Récapitulatif */}
-              <div className={step === 8 ? 'block space-y-4' : 'hidden'}>
-                <div className="bg-muted/30 p-4 rounded-lg space-y-4 text-sm">
-                  <h4 className="font-semibold text-base border-b pb-2">Veuillez vérifier les informations</h4>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <span className="text-muted-foreground block mb-1">Localisation</span>
-                      <p className="font-medium">{form.getValues('commune')}, {form.getValues('quartier')}</p>
-                      <p>Av. {form.getValues('avenue')}, N° {form.getValues('parcelleNo')}</p>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground block mb-1">Propriétaire</span>
-                      <p className="font-medium">{form.getValues('proprietaireNom')}</p>
-                      <p>{form.getValues('telephone')}</p>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground block mb-1">Usage</span>
-                      <p className="capitalize">{form.getValues('usageParcelle')}</p>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground block mb-1">Date visite</span>
-                      <p>{form.getValues('dateProspection')}</p>
-                    </div>
-                  </div>
+                <div className="mt-8 p-6 bg-muted/30 border-2 rounded-xl">
+                  <FormField control={form.control} name="avis_attestation" render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-4 space-y-0">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          className="h-6 w-6 mt-1 data-[state=checked]:bg-green-600 data-[state=checked]:text-white"
+                        />
+                      </FormControl>
+                      <div className="space-y-2">
+                        <FormLabel className="text-base font-bold leading-tight cursor-pointer">
+                          Certification sur l'honneur *
+                        </FormLabel>
+                        <p className="text-sm text-muted-foreground">
+                          Je certifie que les informations recueillies dans cette fiche sont exactes et ont été 
+                          constatées lors de la visite sur le terrain. En cochant cette case, je valide ma soumission.
+                        </p>
+                        <FormMessage />
+                      </div>
+                    </FormItem>
+                  )} />
                 </div>
               </div>
 
-              <div className="flex justify-between mt-8 pt-4 border-t">
+              <div className="flex justify-between mt-8 pt-6 border-t border-border/60">
                 <Button 
                   type="button" 
                   variant="outline" 
                   onClick={prevStep} 
-                  disabled={step === 0}
+                  disabled={step === 0 || isCheckingDuplicate || createFiche.isPending}
+                  className="h-12 px-6"
                 >
-                  <ChevronLeft className="mr-2 h-4 w-4" /> Précédent
+                  <ChevronLeft className="mr-2 h-5 w-5" /> Précédent
                 </Button>
                 
                 {step < STEPS.length - 1 ? (
-                  <Button type="button" onClick={nextStep} disabled={step === 0 && (loadingCommunes || communesError)}>
-                    Suivant <ChevronRight className="ml-2 h-4 w-4" />
+                  <Button 
+                    type="button" 
+                    onClick={nextStep} 
+                    disabled={step === 0 && (loadingCommunes || communesError) || isCheckingDuplicate}
+                    className="h-12 px-6"
+                  >
+                    {isCheckingDuplicate ? (
+                      <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Vérification...</>
+                    ) : (
+                      <>Suivant <ChevronRight className="ml-2 h-5 w-5" /></>
+                    )}
                   </Button>
                 ) : (
                   <Button 
                     type="submit" 
-                    className="bg-green-600 hover:bg-green-700"
+                    className="h-12 px-8 bg-green-600 hover:bg-green-700 text-white font-bold"
                     disabled={createFiche.isPending}
                   >
-                    Soumettre la fiche <CheckCircle2 className="ml-2 h-4 w-4" />
+                    {createFiche.isPending ? (
+                      <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Enregistrement...</>
+                    ) : (
+                      <>Enregistrer la fiche <CheckCircle2 className="ml-2 h-5 w-5" /></>
+                    )}
                   </Button>
                 )}
               </div>

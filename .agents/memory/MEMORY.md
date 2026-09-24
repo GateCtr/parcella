@@ -1,0 +1,1 @@
+- [Portée de la fiche parcellaire](fiche-parcellaire-portee.md) — Le modèle fourni vise Mont-Ngafula, mais l’application doit garder les 24 communes sans attribuer son adresse aux autres.
