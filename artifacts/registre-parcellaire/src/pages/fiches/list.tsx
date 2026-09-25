@@ -141,13 +141,14 @@ export default function FichesList() {
                       {getStatutBadge(fiche.statutFiche)}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Link
-                        href={`/fiches/${fiche.id}`}
+                      <a
+                        href={`${import.meta.env.BASE_URL}fiches/${encodeURIComponent(fiche.id)}`}
                         className={cn(buttonVariants({ variant: 'ghost', size: 'icon' }))}
                         title="Voir les détails"
+                        aria-label={`Voir la fiche ${fiche.ficheNo}`}
                       >
                         <Eye className="h-4 w-4" />
-                      </Link>
+                      </a>
                     </TableCell>
                   </TableRow>
                 ))
