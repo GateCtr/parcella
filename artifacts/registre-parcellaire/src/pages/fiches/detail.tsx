@@ -233,21 +233,18 @@ export default function FicheDetail({ exampleFiche }: { exampleFiche?: Fiche }) 
             </div>
           </div>
 
-           <div className="grid grid-cols-[minmax(0,1fr)_12rem_6.5rem] items-start gap-2 mb-2 text-[11px] font-bold text-[#184490]">
-             <div className="flex flex-wrap items-start gap-x-4 gap-y-2 pt-1">
-               <div className="flex items-baseline gap-1 whitespace-nowrap">
-                 <span>N° Fiche :</span>
-                 <span className="border-b border-black min-w-24 text-center text-[10px] text-black font-normal">{fiche.ficheNo}</span>
-               </div>
-               <div className="flex items-baseline gap-1 whitespace-nowrap">
-                 <span>Date :</span>
-                 <span className="border-b border-black min-w-20 text-center text-black font-normal">{format(dateProsp, "dd/MM/yyyy")}</span>
-               </div>
-             </div>
+           <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end mb-2 text-[11px] font-bold text-[#184490]">
+              <div className="grid grid-cols-[4rem_max-content] items-baseline gap-x-1 gap-y-2 pb-1">
+                <span>N° Fiche :</span>
+                <span className="border-b border-black min-w-24 text-center text-[10px] text-black font-normal">{fiche.ficheNo}</span>
+                <span>Date :</span>
+                <span className="border-b border-black min-w-24 text-center text-black font-normal">{format(dateProsp, "dd/MM/yyyy")}</span>
+              </div>
 
-             <div className="border border-black flex flex-col w-full">
+             <div className="flex">
+              <div className="border border-black flex flex-col w-[12rem] h-[6.5rem]">
               <div className="text-center font-bold text-[#184490] border-b border-black bg-[#eaf1f8] text-[9px] py-0.5 uppercase tracking-wide">PÉRIODE :</div>
-              <div className="bg-[#eaf1f8] p-1 pb-1.5 flex flex-col text-[9px] font-normal text-black">
+               <div className="bg-[#eaf1f8] p-1 pb-1.5 flex flex-1 flex-col justify-center text-[9px] font-normal text-black">
                  <div className="flex justify-between px-1">
                    <Checkbox checked={quarter === 1} label="Trimestre 1" />
                    <Checkbox checked={quarter === 2} label="Trimestre 2" />
@@ -260,7 +257,7 @@ export default function FicheDetail({ exampleFiche }: { exampleFiche?: Fiche }) 
               </div>
             </div>
 
-             <div className="border border-black w-[6.5rem] h-[6.5rem] flex flex-col items-center justify-center bg-white text-center text-[9px] text-gray-500">
+              <div className="border border-l-0 border-black w-[6.5rem] h-[6.5rem] flex flex-col items-center justify-center bg-white text-center text-[9px] text-gray-500">
                {ficheUrl ? (
                  <>
                    <QRCodeSVG
@@ -277,6 +274,7 @@ export default function FicheDetail({ exampleFiche }: { exampleFiche?: Fiche }) 
                   <span className="italic">{isExample ? 'Exemple — sans QR' : 'QR après génération de la plaque'}</span>
                )}
             </div>
+             </div>
           </div>
 
           {/* 1. IDENTIFICATION */}
