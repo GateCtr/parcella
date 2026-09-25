@@ -243,7 +243,10 @@ router.post("/fiches/:id/plaque", requireRole("admin_principal", "validateur"), 
 
 router.get("/plaques", async (req,res):Promise<void>=>{
   const p=ListPlaquesQueryParams.safeParse(req.query); if(!p.success){res.status(400).json({error:p.error.message});return;}
-  const rows=await db.select({p:plaquesTable,f:fichesTable}).from(plaquesTable).innerJoin(fichesTable,eq(plaquesTable.ficheId,fichesTable.id)).where(p.data.commune?eq(fichesTable.commune,p.data.commune):undefined).orderBy(desc(plaquesTable.genereLe));
+  const rows=await db.select({p:plaquesTable,f:fichesTable}).from(plaquesTable).innerJoin(fichesTable,eq(plaquesTable.ficheId,fichesTable.id)).where(and(
+    p.data.commune?eq(fichesTable.commune,p.data.commune):undefined,
+    p.data.ficheId?eq(plaquesTable.ficheId,p.data.ficheId):undefined,
+  )).orderBy(desc(plaquesTable.genereLe));
   res.json(rows.filter(({f})=>!p.data.statut||f.statutPlaque===p.data.statut).map(({p,f})=>{
     const view=plaqueForCurrentOrigin(p);
     return {id:p.id,ficheId:f.id,ficheNo:f.ficheNo,commune:f.commune,quartier:f.quartier,avenue:f.avenue,plaqueNo:f.plaqueNo!,version:p.version,statut:f.statutPlaque,svg:view.svg,genereLe:p.genereLe.toISOString(),imprimeLe:p.imprimeLe?.toISOString()??null,verificationUrl:view.verificationUrl};

@@ -352,5 +352,6 @@ parcelleNo: string;
 export type ListPlaquesParams = {
 commune?: string;
 statut?: string;
+ficheId?: string;
 };
 

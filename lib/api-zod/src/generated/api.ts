@@ -548,7 +548,8 @@ export const GeneratePlaqueResponse = zod.object({
 
 export const ListPlaquesQueryParams = zod.object({
   "commune": zod.coerce.string().optional(),
-  "statut": zod.coerce.string().optional()
+  "statut": zod.coerce.string().optional(),
+  "ficheId": zod.coerce.string().uuid().optional()
 })
 
 export const ListPlaquesResponseItem = zod.object({

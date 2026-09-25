@@ -361,6 +361,9 @@ paths:
         - in: query
           name: statut
           schema: { type: string }
+        - in: query
+          name: ficheId
+          schema: { type: string, format: uuid }
       responses:
         "200":
           description: File d'impression

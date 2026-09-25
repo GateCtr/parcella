@@ -53,6 +53,9 @@ const handleUnauthorized = (error: unknown) => {
 };
 
 const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: { staleTime: 30_000 },
+  },
   queryCache: new QueryCache({
     onError: handleUnauthorized,
   }),

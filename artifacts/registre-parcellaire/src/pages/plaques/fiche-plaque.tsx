@@ -23,8 +23,8 @@ export default function FichePlaque() {
     query: { queryKey: getGetFicheQueryKey(id ?? ''), enabled: Boolean(id) },
   });
 
-  const { data: plaques, isLoading: isLoadingPlaques } = useListPlaques(undefined, {
-    query: { queryKey: getListPlaquesQueryKey(), enabled: Boolean(id) }
+  const { data: plaques, isLoading: isLoadingPlaques } = useListPlaques({ ficheId: id ?? '' }, {
+    query: { enabled: Boolean(id) }
   });
 
   const generatePlaque = useGeneratePlaque();

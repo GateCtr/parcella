@@ -59,8 +59,8 @@ export default function FicheDetail({ exampleFiche }: { exampleFiche?: Fiche }) 
   const { data: rubriqueSettings, isLoading: isRubriqueSettingsLoading, error: rubriqueSettingsError } = useGetRubriqueSettings({
     query: { queryKey: getGetRubriqueSettingsQueryKey(), enabled: !isExample, refetchInterval: 30_000 },
   });
-  const { data: plaques } = useListPlaques(undefined, {
-    query: { queryKey: getListPlaquesQueryKey(), enabled: !isExample && Boolean(id) && savedFiche?.statutFiche === 'validee' },
+  const { data: plaques } = useListPlaques({ ficheId: id ?? '' }, {
+    query: { enabled: !isExample && Boolean(id) && savedFiche?.statutFiche === 'validee' },
   });
   const fiche = exampleFiche ?? savedFiche;
 
