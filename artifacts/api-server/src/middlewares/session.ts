@@ -2,6 +2,7 @@ import type { NextFunction, Request, Response } from "express";
 import { and, eq, gt } from "drizzle-orm";
 import { db, sessionsTable, usersTable } from "@workspace/db";
 import { hashSessionToken } from "../lib/user-auth";
+import { configuredVerificationOrigin } from "../lib/public-verification";
 
 export type SessionUser = Pick<typeof usersTable.$inferSelect, "id" | "email" | "role">;
 
@@ -38,7 +39,15 @@ export function protectUnsafeRequests(req: Request, res: Response, next: NextFun
     const parsed = new URL(origin);
     const forwardedProtocol = req.get("x-forwarded-proto")?.split(",")[0]?.trim();
     const expectedProtocol = forwardedProtocol || (req.secure ? "https" : "http");
-    if (parsed.host.toLowerCase() !== host.toLowerCase() || parsed.protocol !== `${expectedProtocol}:`) {
+    const sameOrigin = parsed.host.toLowerCase() === host.toLowerCase() &&
+      parsed.protocol === `${expectedProtocol}:`;
+    // On a separate Vercel deployment, the frontend proxies /api to this host.
+    // The browser's Origin is the frontend, but its session cookie stays first-party.
+    const publicOrigin = process.env.PUBLIC_VERIFICATION_ORIGIN
+      ? configuredVerificationOrigin()
+      : undefined;
+    const trustedFrontend = expectedProtocol === "https" && parsed.origin === publicOrigin;
+    if (!sameOrigin && !trustedFrontend) {
       res.status(403).json({ error: "Origine de requête invalide" });
       return;
     }
