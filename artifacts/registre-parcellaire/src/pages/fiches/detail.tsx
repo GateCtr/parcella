@@ -13,6 +13,13 @@ import React from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useAuth } from '@/hooks/use-auth';
 
+// Identical star geometry to the flag in the generated plaque SVG.
+const plaqueFlagStarPoints = Array.from({ length: 10 }, (_, i) => {
+  const angle = -Math.PI / 2 + i * Math.PI / 5;
+  const radius = i % 2 === 0 ? 134 : 54;
+  return `${175 + radius * Math.cos(angle)},${190 + radius * Math.sin(angle)}`;
+}).join(' ');
+
 const Checkbox = ({ checked, label, className }: { checked: boolean, label: React.ReactNode, className?: string }) => (
   <div className={cn("flex items-start gap-1.5", className)}>
     <div className="w-3 h-3 mt-[1px] border border-black flex-shrink-0 flex items-center justify-center bg-white">
@@ -220,11 +227,11 @@ export default function FicheDetail({ exampleFiche }: { exampleFiche?: Fiche }) 
                 <div className="text-[9px] text-gray-500 italic">Justice - Paix - Travail</div>
               </div>
               <div className="flex justify-center">
-                <svg viewBox="0 0 120 90" className="w-[70px] h-auto" role="img" aria-label="Drapeau de la République démocratique du Congo">
-                  <rect width="120" height="90" fill="#00A1DE" />
-                  <polygon points="-8,90 34,90 128,0 86,0" fill="#F7D618" />
-                  <polygon points="-2,90 28,90 122,0 92,0" fill="#CE1021" />
-                  <polygon points="24,5 27.5,16 39,16 29.7,23 33.5,34 24,27 14.5,34 18.3,23 9,16 20.5,16" fill="#F7D618" />
+                <svg viewBox="0 0 960 640" className="w-[70px] h-auto" role="img" aria-label="Drapeau de la République démocratique du Congo">
+                  <rect width="960" height="640" fill="#007fff" />
+                  <path d="M0 565 850 0 H960 V87 L110 640 H0Z" fill="#f7d116" />
+                  <path d="M0 604 909 0 H960 V47 L51 640 H0Z" fill="#ce1126" />
+                  <polygon points={plaqueFlagStarPoints} fill="#f7d116" />
                 </svg>
               </div>
             </div>
