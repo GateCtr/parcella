@@ -1,20 +1,18 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
-import app from "../src/app";
-import { seedAdminIfMissing } from "../src/lib/bootstrap";
-import { logger } from "../src/lib/logger";
+import app from "../src/app.js";
+import { seedAdminIfMissing } from "../src/lib/bootstrap.js";
+import { logger } from "../src/lib/logger.js";
 
 let bootstrapPromise: Promise<void> | undefined;
 
 function ensureBootstrap(): Promise<void> {
-  if (!bootstrapPromise) {
-    bootstrapPromise = seedAdminIfMissing().catch((err: unknown) => {
+  const promise = bootstrapPromise ?? seedAdminIfMissing().catch((err: unknown) => {
       bootstrapPromise = undefined;
       logger.error({ err }, "API bootstrap failed");
       throw err;
-    });
-  }
-
-  return bootstrapPromise;
+  });
+  bootstrapPromise = promise;
+  return promise;
 }
 
 export default async function handler(

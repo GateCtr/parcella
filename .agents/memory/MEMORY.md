@@ -3,3 +3,4 @@
 - [Rubriques configurables](rubriques-configurables.md) — Les métadonnées indispensables doivent rester accessibles même si la dernière rubrique est masquée ; masquer ne supprime pas l’historique.
 - [Défilement des formulaires](defilement-formulaires.md) — Garder un seul défilement dans les fiches ; raccourcir les étapes plutôt qu’ajouter un défilement interne.
 - [Remise des codes d’accès](remise-codes-acces.md) — Sans service e-mail connecté, l’admin remet les codes manuellement ; ne pas supposer un envoi automatique.
+- [Build Vercel de l’API séparée](build-vercel-api.md) — Le contrôle TypeScript du workspace ne couvre pas forcément les exigences NodeNext imposées ensuite aux fonctions Vercel.

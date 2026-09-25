@@ -1,1 +1,1 @@
-export { default } from "../artifacts/api-server/api/index";
+export { default } from "../artifacts/api-server/api/index.js";
