@@ -36,6 +36,7 @@ export default function FichePlaque() {
   const fichePlaques = plaques?.filter(p => p.ficheId === id).sort((a, b) => b.version - a.version);
   const latestPlaque = fichePlaques?.[0];
   const hasSvg = Boolean(latestPlaque?.svg);
+  const qrReady = Boolean(latestPlaque?.verificationUrl);
   const addressKey = encodeURIComponent(JSON.stringify([
     fiche.parcelleNo, fiche.avenue, fiche.localite ?? '', fiche.quartier, fiche.commune,
   ])).replace(/'/g, '%27');
@@ -113,7 +114,7 @@ export default function FichePlaque() {
             </Button>
           ) : (
             <>
-              {latestPlaque?.statut !== 'imprimee' && canGenerate && (
+              {qrReady && latestPlaque?.statut !== 'imprimee' && canGenerate && (
                 <Button
                   onClick={handleMarkPrinted}
                   disabled={markPrinted.isPending}
@@ -122,11 +123,11 @@ export default function FichePlaque() {
                    <CheckCircle className="mr-2 h-4 w-4" /> Confirmer impression
                 </Button>
               )}
-              <Button variant="outline" onClick={() => window.print()}>
+              <Button variant="outline" onClick={() => window.print()} disabled={!qrReady}>
                 <Printer className="mr-2 h-4 w-4" /> Imprimer / PDF
               </Button>
               {!legacyPlaque && (
-                <Button variant="outline" onClick={handleDownload} data-testid="button-download-plaque">
+                <Button variant="outline" onClick={handleDownload} disabled={!qrReady} data-testid="button-download-plaque">
                   <Download className="mr-2 h-4 w-4" /> Télécharger SVG vectoriel
                 </Button>
               )}
@@ -136,6 +137,14 @@ export default function FichePlaque() {
       </div>
 
       <LocaliteEditor fiche={fiche} />
+
+      {hasSvg && !qrReady && (
+        <Alert variant="destructive" className="no-print">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>QR non prêt pour l'impression</AlertTitle>
+          <AlertDescription>Choisissez et configurez d'abord un domaine public permanent, puis actualisez les QR des plaques enregistrées. L'impression et le téléchargement restent désactivés.</AlertDescription>
+        </Alert>
+      )}
 
       {fiche.statutFiche === 'validee' && hasSvg && !legacyPlaque && (
         <p className="no-print text-sm text-muted-foreground">

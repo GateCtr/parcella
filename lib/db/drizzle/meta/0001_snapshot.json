@@ -1,0 +1,762 @@
+{
+  "id": "1911a484-b1da-40e4-a22c-48aa120f719e",
+  "prevId": "d9f7a69c-bbd4-46c0-a479-d3cc4839e6cd",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.journal_audit": {
+      "name": "journal_audit",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "utilisateur_id": {
+          "name": "utilisateur_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "action": {
+          "name": "action",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "fiche_id": {
+          "name": "fiche_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "donnees_avant": {
+          "name": "donnees_avant",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "donnees_apres": {
+          "name": "donnees_apres",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "horodatage": {
+          "name": "horodatage",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "journal_audit_fiche_id_fiches_id_fk": {
+          "name": "journal_audit_fiche_id_fiches_id_fk",
+          "tableFrom": "journal_audit",
+          "tableTo": "fiches",
+          "columnsFrom": [
+            "fiche_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.fiches": {
+      "name": "fiches",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "fiche_no": {
+          "name": "fiche_no",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "date_prospection": {
+          "name": "date_prospection",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "commune": {
+          "name": "commune",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "quartier": {
+          "name": "quartier",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "localite": {
+          "name": "localite",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "avenue": {
+          "name": "avenue",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "parcelle_no": {
+          "name": "parcelle_no",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "plaque_no": {
+          "name": "plaque_no",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "proprietaire_nom": {
+          "name": "proprietaire_nom",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "telephone": {
+          "name": "telephone",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "type_occupation": {
+          "name": "type_occupation",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "superficie": {
+          "name": "superficie",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "usage_parcelle": {
+          "name": "usage_parcelle",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "plaque_existante": {
+          "name": "plaque_existante",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "statut_paiement": {
+          "name": "statut_paiement",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "recu_no": {
+          "name": "recu_no",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sensibilisation": {
+          "name": "sensibilisation",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "hygiene": {
+          "name": "hygiene",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "dechets": {
+          "name": "dechets",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "facade": {
+          "name": "facade",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "drainage": {
+          "name": "drainage",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "activites": {
+          "name": "activites",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'"
+        },
+        "remarques": {
+          "name": "remarques",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "avis": {
+          "name": "avis",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "agent_id": {
+          "name": "agent_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "agent_matricule": {
+          "name": "agent_matricule",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "chef_rue_nom": {
+          "name": "chef_rue_nom",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "chef_rue_avenue": {
+          "name": "chef_rue_avenue",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "statut_fiche": {
+          "name": "statut_fiche",
+          "type": "statut_fiche",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'soumise'"
+        },
+        "statut_plaque": {
+          "name": "statut_plaque",
+          "type": "statut_plaque",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'non_generee'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "fiches_adresse_unique": {
+          "name": "fiches_adresse_unique",
+          "columns": [
+            {
+              "expression": "commune",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "quartier",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "avenue",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "parcelle_no",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "fiches_fiche_no_unique": {
+          "name": "fiches_fiche_no_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "fiche_no"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.plaques": {
+      "name": "plaques",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "fiche_id": {
+          "name": "fiche_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "public_token_hash": {
+          "name": "public_token_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "public_token_encrypted": {
+          "name": "public_token_encrypted",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "svg": {
+          "name": "svg",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "genere_le": {
+          "name": "genere_le",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "imprime_le": {
+          "name": "imprime_le",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "plaques_fiche_id_fiches_id_fk": {
+          "name": "plaques_fiche_id_fiches_id_fk",
+          "tableFrom": "plaques",
+          "tableTo": "fiches",
+          "columnsFrom": [
+            "fiche_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "plaques_public_token_hash_unique": {
+          "name": "plaques_public_token_hash_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "public_token_hash"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.rubrique_settings": {
+      "name": "rubrique_settings",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "default": 1
+        },
+        "adressage": {
+          "name": "adressage",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "hygiene": {
+          "name": "hygiene",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "dechets": {
+          "name": "dechets",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "facade": {
+          "name": "facade",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "drainage": {
+          "name": "drainage",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "activites": {
+          "name": "activites",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "remarques": {
+          "name": "remarques",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "avis": {
+          "name": "avis",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "rubrique_settings_singleton_id": {
+          "name": "rubrique_settings_singleton_id",
+          "value": "\"rubrique_settings\".\"id\" = 1"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.auth_login_attempts": {
+      "name": "auth_login_attempts",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "scope": {
+          "name": "scope",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "subject_hash": {
+          "name": "subject_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "attempts": {
+          "name": "attempts",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "window_started": {
+          "name": "window_started",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "auth_login_attempts_scope_subject_unique": {
+          "name": "auth_login_attempts_scope_subject_unique",
+          "columns": [
+            {
+              "expression": "scope",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "subject_hash",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.sessions": {
+      "name": "sessions",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "token_hash": {
+          "name": "token_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "sessions_user_id_users_id_fk": {
+          "name": "sessions_user_id_users_id_fk",
+          "tableFrom": "sessions",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "sessions_token_hash_unique": {
+          "name": "sessions_token_hash_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "token_hash"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.users": {
+      "name": "users",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "role": {
+          "name": "role",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "active": {
+          "name": "active",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "code_salt": {
+          "name": "code_salt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "code_hash": {
+          "name": "code_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "users_single_admin_principal": {
+          "name": "users_single_admin_principal",
+          "columns": [
+            {
+              "expression": "role",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"users\".\"role\" = 'admin_principal'",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "users_email_unique": {
+          "name": "users_email_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "email"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {
+    "public.statut_fiche": {
+      "name": "statut_fiche",
+      "schema": "public",
+      "values": [
+        "brouillon",
+        "soumise",
+        "validee",
+        "rejetee"
+      ]
+    },
+    "public.statut_plaque": {
+      "name": "statut_plaque",
+      "schema": "public",
+      "values": [
+        "non_generee",
+        "generee",
+        "a_reimprimer",
+        "imprimee"
+      ]
+    }
+  },
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}
