@@ -219,6 +219,14 @@ export default function FicheDetail({ exampleFiche }: { exampleFiche?: Fiche }) 
                 <div className="text-[10px] text-gray-700 mt-1">VILLE PROVINCE DE KINSHASA</div>
                 <div className="text-[9px] text-gray-500 italic">Justice - Paix - Travail</div>
               </div>
+              <div className="flex justify-center">
+                <svg viewBox="0 0 120 90" className="w-[70px] h-auto" role="img" aria-label="Drapeau de la République démocratique du Congo">
+                  <rect width="120" height="90" fill="#00A1DE" />
+                  <polygon points="-8,90 34,90 128,0 86,0" fill="#F7D618" />
+                  <polygon points="-2,90 28,90 122,0 92,0" fill="#CE1021" />
+                  <polygon points="24,5 27.5,16 39,16 29.7,23 33.5,34 24,27 14.5,34 18.3,23 9,16 20.5,16" fill="#F7D618" />
+                </svg>
+              </div>
             </div>
 
             <div className="bg-[#eaf1f8] w-full py-1.5 px-4 text-center border-b border-white">
