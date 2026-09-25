@@ -1,7 +1,7 @@
 import type { IncomingMessage, RequestListener, ServerResponse } from "node:http";
-import app from "../src/app.js";
-import { seedAdminIfMissing } from "../src/lib/bootstrap.js";
-import { logger } from "../src/lib/logger.js";
+import app from "./app";
+import { seedAdminIfMissing } from "./lib/bootstrap";
+import { logger } from "./lib/logger";
 
 let bootstrapPromise: Promise<void> | undefined;
 

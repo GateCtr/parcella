@@ -13,9 +13,10 @@ const artifactDir = path.dirname(fileURLToPath(import.meta.url));
 async function buildAll() {
   const distDir = path.resolve(artifactDir, "dist");
   await rm(distDir, { recursive: true, force: true });
+  const entry = process.argv.includes("--vercel") ? "src/vercel-handler.ts" : "src/index.ts";
 
   await esbuild({
-    entryPoints: [path.resolve(artifactDir, "src/index.ts")],
+    entryPoints: [path.resolve(artifactDir, entry)],
     platform: "node",
     bundle: true,
     format: "esm",
