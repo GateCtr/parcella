@@ -209,26 +209,25 @@ export default function FicheDetail({ exampleFiche }: { exampleFiche?: Fiche }) 
           )}
 
           {/* Header Section */}
-          <div className="flex items-start gap-2 mb-4">
-            <div className="w-[100px] flex-shrink-0 flex justify-center mt-2">
-              <img src={`${import.meta.env.BASE_URL}kinshasa-seal.png`} className="w-[85px] h-auto object-contain" alt="Sceau Kinshasa" />
-            </div>
-
-            <div className="flex-1 flex flex-col items-center justify-center">
-              <div className="text-center mb-1 leading-tight">
+          <div className="mb-4">
+            <div className="grid grid-cols-[100px_minmax(0,1fr)_100px] items-start min-h-[70px]">
+              <div className="flex justify-center">
+                <img src={`${import.meta.env.BASE_URL}kinshasa-seal.png`} className="w-[70px] h-[70px] object-contain" alt="Sceau Kinshasa" />
+              </div>
+              <div className="text-center leading-tight">
                 <div className="font-bold text-[11px] text-black">REPUBLIQUE DEMOCRATIQUE<br/>DU CONGO</div>
                 <div className="text-[10px] text-gray-700 mt-1">VILLE PROVINCE DE KINSHASA</div>
                 <div className="text-[9px] text-gray-500 italic">Justice - Paix - Travail</div>
               </div>
+            </div>
 
-              <div className="bg-[#eaf1f8] w-full py-1.5 px-4 text-center border-b border-white">
-                <div className="text-[#184490] font-bold text-[12px] uppercase">COMMUNE DE {fiche.commune}</div>
-                <div className="text-[#a31a1a] font-bold text-[16px] leading-tight uppercase my-0.5">
-                  FICHE DE PROSPECTION<br/>PARCELLAIRE
-                </div>
-                <div className="text-[#184490] italic text-[10px]">
-                  Identification et Adressage Parcellaire - Quartier {fiche.quartier || '_________________'}
-                </div>
+            <div className="bg-[#eaf1f8] w-full py-1.5 px-4 text-center border-b border-white">
+              <div className="text-[#184490] font-bold text-[12px] uppercase">COMMUNE DE {fiche.commune}</div>
+              <div className="text-[#a31a1a] font-bold text-[16px] leading-tight uppercase my-0.5">
+                FICHE DE PROSPECTION<br/>PARCELLAIRE
+              </div>
+              <div className="text-[#184490] italic text-[10px]">
+                Identification et Adressage Parcellaire - Quartier {fiche.quartier || '_________________'}
               </div>
             </div>
           </div>
