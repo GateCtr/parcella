@@ -24,6 +24,7 @@ import {
 import { decrypt, encrypt } from "../lib/crypto";
 import { plaqueSvg } from "../lib/plaque-svg";
 import { plaqueQrPath } from "../lib/plaque-qr";
+import { replacePlaqueQr } from "../lib/plaque-qr-migration";
 import { configuredVerificationOrigin, newVerificationCode, verificationHash, verificationUrl } from "../lib/public-verification";
 import { requireRole, requireUser } from "../middlewares/session";
 
@@ -37,15 +38,20 @@ function userId(req: Request) {
 function publicFiche(row: typeof fichesTable.$inferSelect) {
   return { ...row, proprietaireNom: decrypt(row.proprietaireNom), telephone: decrypt(row.telephone), superficie: row.superficie, createdAt: row.createdAt.toISOString() };
 }
-function printableVerificationUrl(plaque: typeof plaquesTable.$inferSelect): string | null {
-  if (!plaque.publicTokenEncrypted || !plaque.publicTokenHash) return null;
+function plaqueForCurrentOrigin(plaque: typeof plaquesTable.$inferSelect): { svg: string; verificationUrl: string | null } {
+  const unavailable = { svg: plaque.svg, verificationUrl: null };
+  if (!plaque.publicTokenEncrypted || !plaque.publicTokenHash) return unavailable;
   try {
     configuredVerificationOrigin();
     const token = decrypt(plaque.publicTokenEncrypted);
     const url = verificationUrl(token);
-    return verificationHash(token) === plaque.publicTokenHash && plaque.svg.includes(plaqueQrPath(url)) ? url : null;
+    if (verificationHash(token) !== plaque.publicTokenHash) return unavailable;
+    if (plaque.svg.includes(plaqueQrPath(url))) return { svg: plaque.svg, verificationUrl: url };
+    // An already printed plaque must never be silently changed: its physical QR still points elsewhere.
+    if (plaque.imprimeLe) return unavailable;
+    return { svg: replacePlaqueQr(plaque.svg, url), verificationUrl: url };
   } catch {
-    return null;
+    return unavailable;
   }
 }
 router.get("/communes", (_req, res) => res.json(COMMUNES.map((nom) => ({ code: code(nom), nom }))));
@@ -238,7 +244,10 @@ router.post("/fiches/:id/plaque", requireRole("admin_principal", "validateur"), 
 router.get("/plaques", async (req,res):Promise<void>=>{
   const p=ListPlaquesQueryParams.safeParse(req.query); if(!p.success){res.status(400).json({error:p.error.message});return;}
   const rows=await db.select({p:plaquesTable,f:fichesTable}).from(plaquesTable).innerJoin(fichesTable,eq(plaquesTable.ficheId,fichesTable.id)).where(p.data.commune?eq(fichesTable.commune,p.data.commune):undefined).orderBy(desc(plaquesTable.genereLe));
-  res.json(rows.filter(({f})=>!p.data.statut||f.statutPlaque===p.data.statut).map(({p,f})=>({id:p.id,ficheId:f.id,ficheNo:f.ficheNo,commune:f.commune,quartier:f.quartier,avenue:f.avenue,plaqueNo:f.plaqueNo!,version:p.version,statut:f.statutPlaque,svg:p.svg,genereLe:p.genereLe.toISOString(),imprimeLe:p.imprimeLe?.toISOString()??null,verificationUrl:printableVerificationUrl(p)})));
+  res.json(rows.filter(({f})=>!p.data.statut||f.statutPlaque===p.data.statut).map(({p,f})=>{
+    const view=plaqueForCurrentOrigin(p);
+    return {id:p.id,ficheId:f.id,ficheNo:f.ficheNo,commune:f.commune,quartier:f.quartier,avenue:f.avenue,plaqueNo:f.plaqueNo!,version:p.version,statut:f.statutPlaque,svg:view.svg,genereLe:p.genereLe.toISOString(),imprimeLe:p.imprimeLe?.toISOString()??null,verificationUrl:view.verificationUrl};
+  }));
 });
 
 router.post("/plaques/:id/imprimer",requireRole("admin_principal", "validateur"),async(req,res):Promise<void>=>{
@@ -251,18 +260,18 @@ router.post("/plaques/:id/imprimer",requireRole("admin_principal", "validateur")
   if (!current.publicTokenEncrypted || !current.publicTokenHash) {
     res.status(409).json({error:"Cette plaque n'a pas de QR de vérification"});return;
   }
-  const token = decrypt(current.publicTokenEncrypted);
-  if (verificationHash(token) !== current.publicTokenHash || !current.svg.includes(plaqueQrPath(verificationUrl(token)))) {
+  const view = plaqueForCurrentOrigin(current);
+  if (!view.verificationUrl) {
     res.status(409).json({error:"Le QR de cette plaque doit être actualisé avant l'impression"});return;
   }
-  if (new URL(verificationUrl(token)).origin !== origin) {
+  if (new URL(view.verificationUrl).origin !== origin) {
     res.status(409).json({error:"Domaine de vérification incompatible"});return;
   }
-  const [plaque]=await db.update(plaquesTable).set({imprimeLe:new Date()})
+  const [plaque]=await db.update(plaquesTable).set({svg:view.svg,imprimeLe:new Date()})
     .where(and(eq(plaquesTable.id,p.data.id),eq(plaquesTable.svg,current.svg))).returning();
   if(!plaque){res.status(409).json({error:"Plaque modifiée pendant la confirmation : rechargez la page"});return;}
   const [f]=await db.update(fichesTable).set({statutPlaque:"imprimee"}).where(eq(fichesTable.id,plaque.ficheId)).returning();
-  res.json({id:plaque.id,ficheId:f.id,ficheNo:f.ficheNo,commune:f.commune,quartier:f.quartier,avenue:f.avenue,plaqueNo:f.plaqueNo!,version:plaque.version,statut:"imprimee",svg:plaque.svg,genereLe:plaque.genereLe.toISOString(),imprimeLe:plaque.imprimeLe!.toISOString(),verificationUrl:printableVerificationUrl(plaque)});
+  res.json({id:plaque.id,ficheId:f.id,ficheNo:f.ficheNo,commune:f.commune,quartier:f.quartier,avenue:f.avenue,plaqueNo:f.plaqueNo!,version:plaque.version,statut:"imprimee",svg:plaque.svg,genereLe:plaque.genereLe.toISOString(),imprimeLe:plaque.imprimeLe!.toISOString(),verificationUrl:plaqueForCurrentOrigin(plaque).verificationUrl});
 });
 
 router.get("/dashboard",async(req,res):Promise<void>=>{

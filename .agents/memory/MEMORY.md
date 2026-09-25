@@ -5,3 +5,4 @@
 - [Remise des codes d’accès](remise-codes-acces.md) — Sans service e-mail connecté, l’admin remet les codes manuellement ; ne pas supposer un envoi automatique.
 - [Build Vercel de l’API séparée](build-vercel-api.md) — Le contrôle TypeScript du workspace ne couvre pas forcément les exigences NodeNext imposées ensuite aux fonctions Vercel.
 - [Navigation vers une fiche](navigation-fiche-dom.md) — La traduction automatique peut modifier le DOM React ; garder l’accès à la fiche robuste quand la liste est démontée.
+- [Format des URL PostgreSQL externes](url-postgresql-externe.md) — Valider la forme d’un secret de connexion sans l’afficher avant une migration ; un préfixe peut provoquer ENOTFOUND.
