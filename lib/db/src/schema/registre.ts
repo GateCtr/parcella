@@ -74,6 +74,8 @@ export const plaquesTable = pgTable("plaques", {
   id: uuid("id").primaryKey().defaultRandom(),
   ficheId: uuid("fiche_id").notNull().references(() => fichesTable.id),
   version: integer("version").notNull().default(1),
+  publicTokenHash: text("public_token_hash").unique(),
+  publicTokenEncrypted: text("public_token_encrypted"),
   svg: text("svg").notNull(),
   genereLe: timestamp("genere_le", { withTimezone: true }).notNull().defaultNow(),
   imprimeLe: timestamp("imprime_le", { withTimezone: true }),

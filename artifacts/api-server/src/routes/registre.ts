@@ -7,6 +7,8 @@ import {
   DecideFicheBody,
   DecideFicheParams,
   GetRubriqueSettingsResponse,
+  GetPublicPlaqueQueryParams,
+  GetPublicPlaqueResponse,
   GeneratePlaqueParams,
   GetFicheParams,
   ListFichesQueryParams,
@@ -21,6 +23,7 @@ import {
 } from "@workspace/api-zod";
 import { decrypt, encrypt } from "../lib/crypto";
 import { plaqueSvg } from "../lib/plaque-svg";
+import { newVerificationCode, verificationHash, verificationUrl } from "../lib/public-verification";
 import { requireRole, requireUser } from "../middlewares/session";
 
 const router: IRouter = Router();
@@ -34,6 +37,29 @@ function publicFiche(row: typeof fichesTable.$inferSelect) {
   return { ...row, proprietaireNom: decrypt(row.proprietaireNom), telephone: decrypt(row.telephone), superficie: row.superficie, createdAt: row.createdAt.toISOString() };
 }
 router.get("/communes", (_req, res) => res.json(COMMUNES.map((nom) => ({ code: code(nom), nom }))));
+router.get("/public/plaques", async (req, res): Promise<void> => {
+  res.set({ "Cache-Control": "no-store", "Referrer-Policy": "no-referrer", "X-Robots-Tag": "noindex, nofollow" });
+  const parsed = GetPublicPlaqueQueryParams.safeParse(req.query);
+  if (!parsed.success) { res.status(404).json({ error: "Plaque introuvable" }); return; }
+  const [record] = await db.select({ p: plaquesTable, f: fichesTable })
+    .from(plaquesTable)
+    .innerJoin(fichesTable, eq(plaquesTable.ficheId, fichesTable.id))
+    .where(eq(plaquesTable.publicTokenHash, verificationHash(parsed.data.code)))
+    .limit(1);
+  if (!record || record.f.statutFiche !== "validee" || record.f.statutPlaque === "non_generee") {
+    res.status(404).json({ error: "Plaque introuvable" }); return;
+  }
+  const { p, f } = record;
+  const [latest] = await db.select({ version: plaquesTable.version }).from(plaquesTable)
+    .where(eq(plaquesTable.ficheId, f.id)).orderBy(desc(plaquesTable.version)).limit(1);
+  res.json(GetPublicPlaqueResponse.parse({
+    ficheNo: f.ficheNo, plaqueNo: f.plaqueNo!, version: p.version,
+    actuelle: p.version === latest?.version && f.statutPlaque !== "a_reimprimer",
+    commune: f.commune, quartier: f.quartier, localite: f.localite,
+    avenue: f.avenue, parcelleNo: f.parcelleNo, statut: f.statutPlaque,
+    genereLe: p.genereLe.toISOString(),
+  }));
+});
 router.use(requireUser);
 
 async function ensureRubriqueSettings() {
@@ -181,22 +207,26 @@ router.post("/fiches/:id/plaque", requireRole("admin_principal", "validateur"), 
   if(f.statutFiche!=="validee"){res.status(409).json({error:"La fiche doit être validée"});return;}
   const existing=await db.select().from(plaquesTable).where(eq(plaquesTable.ficheId,f.id)).orderBy(desc(plaquesTable.version));
   const version=(existing[0]?.version??0)+1; const plaqueNo=f.plaqueNo??`${code(f.commune)}-${f.parcelleNo}`;
-  const domain = process.env.REPLIT_DOMAINS?.split(",")[0]?.trim();
-  const host = domain || req.get("host");
-  if (!host) { res.status(503).json({error:"Domaine de la fiche indisponible"}); return; }
-  const origin = host.startsWith("localhost") ? `http://${host}` : `https://${host}`;
-  const ficheUrl = new URL(`/fiches/${encodeURIComponent(f.id)}`, origin).toString();
-  const svg=plaqueSvg(f,plaqueNo,ficheUrl);
-  if (existing[0]?.svg === svg) { res.status(409).json({error:"Plaque déjà générée"}); return; }
-  const [plaque]=await db.insert(plaquesTable).values({ficheId:f.id,version,svg}).returning();
+  const token = newVerificationCode();
+  let link: string;
+  try { link = verificationUrl(token); }
+  catch { res.status(503).json({ error: "Domaine de vérification indisponible" }); return; }
+  const svg=plaqueSvg(f,plaqueNo,link);
+  const withoutQr = (value: string) => value.replace(/<path d="[^"]*" fill="#111"\/>\s*<\/svg>$/, "<qr/></svg>");
+  if (existing[0] && withoutQr(existing[0].svg) === withoutQr(svg)) {
+    res.status(409).json({error:"Plaque déjà générée"}); return;
+  }
+  const [plaque]=await db.insert(plaquesTable).values({
+    ficheId:f.id,version,svg,publicTokenHash:verificationHash(token),publicTokenEncrypted:encrypt(token),
+  }).returning();
   const statut=existing.length?"a_reimprimer":"generee"; await db.update(fichesTable).set({plaqueNo,statutPlaque:statut}).where(eq(fichesTable.id,f.id));
-  res.status(201).json({id:plaque.id,ficheId:f.id,ficheNo:f.ficheNo,commune:f.commune,quartier:f.quartier,avenue:f.avenue,plaqueNo,version,statut,svg,genereLe:plaque.genereLe.toISOString(),imprimeLe:null});
+  res.status(201).json({id:plaque.id,ficheId:f.id,ficheNo:f.ficheNo,commune:f.commune,quartier:f.quartier,avenue:f.avenue,plaqueNo,version,statut,svg,genereLe:plaque.genereLe.toISOString(),imprimeLe:null,verificationUrl:link});
 });
 
 router.get("/plaques", async (req,res):Promise<void>=>{
   const p=ListPlaquesQueryParams.safeParse(req.query); if(!p.success){res.status(400).json({error:p.error.message});return;}
   const rows=await db.select({p:plaquesTable,f:fichesTable}).from(plaquesTable).innerJoin(fichesTable,eq(plaquesTable.ficheId,fichesTable.id)).where(p.data.commune?eq(fichesTable.commune,p.data.commune):undefined).orderBy(desc(plaquesTable.genereLe));
-  res.json(rows.filter(({f})=>!p.data.statut||f.statutPlaque===p.data.statut).map(({p,f})=>({id:p.id,ficheId:f.id,ficheNo:f.ficheNo,commune:f.commune,quartier:f.quartier,avenue:f.avenue,plaqueNo:f.plaqueNo!,version:p.version,statut:f.statutPlaque,svg:p.svg,genereLe:p.genereLe.toISOString(),imprimeLe:p.imprimeLe?.toISOString()??null})));
+  res.json(rows.filter(({f})=>!p.data.statut||f.statutPlaque===p.data.statut).map(({p,f})=>({id:p.id,ficheId:f.id,ficheNo:f.ficheNo,commune:f.commune,quartier:f.quartier,avenue:f.avenue,plaqueNo:f.plaqueNo!,version:p.version,statut:f.statutPlaque,svg:p.svg,genereLe:p.genereLe.toISOString(),imprimeLe:p.imprimeLe?.toISOString()??null,verificationUrl:p.publicTokenEncrypted?verificationUrl(decrypt(p.publicTokenEncrypted)):null})));
 });
 
 router.post("/plaques/:id/imprimer",requireRole("admin_principal", "validateur"),async(req,res):Promise<void>=>{
@@ -204,7 +234,7 @@ router.post("/plaques/:id/imprimer",requireRole("admin_principal", "validateur")
   const [plaque]=await db.update(plaquesTable).set({imprimeLe:new Date()}).where(eq(plaquesTable.id,p.data.id)).returning();
   if(!plaque){res.status(404).json({error:"Plaque introuvable"});return;}
   const [f]=await db.update(fichesTable).set({statutPlaque:"imprimee"}).where(eq(fichesTable.id,plaque.ficheId)).returning();
-  res.json({id:plaque.id,ficheId:f.id,ficheNo:f.ficheNo,commune:f.commune,quartier:f.quartier,avenue:f.avenue,plaqueNo:f.plaqueNo!,version:plaque.version,statut:"imprimee",svg:plaque.svg,genereLe:plaque.genereLe.toISOString(),imprimeLe:plaque.imprimeLe!.toISOString()});
+  res.json({id:plaque.id,ficheId:f.id,ficheNo:f.ficheNo,commune:f.commune,quartier:f.quartier,avenue:f.avenue,plaqueNo:f.plaqueNo!,version:plaque.version,statut:"imprimee",svg:plaque.svg,genereLe:plaque.genereLe.toISOString(),imprimeLe:plaque.imprimeLe!.toISOString(),verificationUrl:plaque.publicTokenEncrypted?verificationUrl(decrypt(plaque.publicTokenEncrypted)):null});
 });
 
 router.get("/dashboard",async(req,res):Promise<void>=>{

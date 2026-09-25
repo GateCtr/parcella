@@ -21,4 +21,6 @@ export interface Plaque {
   genereLe: Date;
   /** @nullable */
   imprimeLe?: Date | null;
+  /** @nullable */
+  verificationUrl: string | null;
 }

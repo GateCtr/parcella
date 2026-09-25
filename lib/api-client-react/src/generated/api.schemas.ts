@@ -246,6 +246,32 @@ export interface Plaque {
   genereLe: string;
   /** @nullable */
   imprimeLe?: string | null;
+  /** @nullable */
+  verificationUrl: string | null;
+}
+
+export type PublicPlaqueStatut = typeof PublicPlaqueStatut[keyof typeof PublicPlaqueStatut];
+
+
+export const PublicPlaqueStatut = {
+  generee: 'generee',
+  a_reimprimer: 'a_reimprimer',
+  imprimee: 'imprimee',
+} as const;
+
+export interface PublicPlaque {
+  ficheNo: string;
+  plaqueNo: string;
+  version: number;
+  actuelle: boolean;
+  commune: string;
+  quartier: string;
+  /** @nullable */
+  localite: string | null;
+  avenue: string;
+  parcelleNo: string;
+  statut: PublicPlaqueStatut;
+  genereLe: string;
 }
 
 export interface RubriqueSettings {
@@ -298,6 +324,13 @@ export interface Dashboard {
   repartitionCommunes: DashboardRepartitionCommunesItem[];
   activiteRecente: DashboardActiviteRecenteItem[];
 }
+
+export type GetPublicPlaqueParams = {
+/**
+ * @pattern ^[A-Za-z0-9_-]{43}$
+ */
+code: string;
+};
 
 export type GetDashboardParams = {
 commune?: string;

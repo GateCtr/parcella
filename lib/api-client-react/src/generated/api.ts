@@ -33,6 +33,7 @@ import type {
   FicheLocaliteInput,
   FicheUpdate,
   GetDashboardParams,
+  GetPublicPlaqueParams,
   HealthStatus,
   ListFichesParams,
   ListPlaquesParams,
@@ -40,6 +41,7 @@ import type {
   LogoutResult,
   ManagedUser,
   Plaque,
+  PublicPlaque,
   RubriqueSettingChange,
   RubriqueSettings,
   UserInput,
@@ -728,6 +730,87 @@ export function useListCommunes<TData = Awaited<ReturnType<typeof listCommunes>>
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getListCommunesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetPublicPlaqueUrl = (params: GetPublicPlaqueParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/public/plaques?${stringifiedParams}` : `/api/public/plaques`
+}
+
+/**
+ * Informations limitées sur une plaque, accessibles sans connexion via son QR.
+ */
+export const getPublicPlaque = async (params: GetPublicPlaqueParams, options?: Parameters<typeof customFetch>[1]): Promise<PublicPlaque> => {
+
+  return customFetch<PublicPlaque>(getGetPublicPlaqueUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPublicPlaqueQueryKey = (params?: GetPublicPlaqueParams,) => {
+    return [
+    `/api/public/plaques`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetPublicPlaqueQueryOptions = <TData = Awaited<ReturnType<typeof getPublicPlaque>>, TError = ErrorType<void>>(params: GetPublicPlaqueParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPublicPlaque>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPublicPlaqueQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPublicPlaque>>> = ({ signal }) => getPublicPlaque(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPublicPlaque>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPublicPlaqueQueryResult = NonNullable<Awaited<ReturnType<typeof getPublicPlaque>>>
+export type GetPublicPlaqueQueryError = ErrorType<void>
+
+
+
+export function useGetPublicPlaque<TData = Awaited<ReturnType<typeof getPublicPlaque>>, TError = ErrorType<void>>(
+ params: GetPublicPlaqueParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPublicPlaque>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPublicPlaqueQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

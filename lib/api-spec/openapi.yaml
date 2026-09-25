@@ -161,6 +161,25 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Commune"
+  /public/plaques:
+    get:
+      operationId: getPublicPlaque
+      tags: [plaques]
+      description: Informations limitées sur une plaque, accessibles sans connexion via son QR.
+      parameters:
+        - in: query
+          name: code
+          required: true
+          schema: { type: string, pattern: "^[A-Za-z0-9_-]{43}$" }
+      responses:
+        "200":
+          description: Plaque reconnue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicPlaque"
+        "404":
+          description: Plaque non reconnue ou fiche non validée
   /dashboard:
     get:
       operationId: getDashboard
@@ -565,7 +584,7 @@ components:
             - type: "null"
     Plaque:
       type: object
-      required: [id, ficheId, ficheNo, commune, quartier, avenue, plaqueNo, version, statut, svg, genereLe]
+      required: [id, ficheId, ficheNo, commune, quartier, avenue, plaqueNo, version, statut, svg, genereLe, verificationUrl]
       properties:
         id: { type: string, format: uuid }
         ficheId: { type: string, format: uuid }
@@ -579,6 +598,22 @@ components:
         svg: { type: string }
         genereLe: { type: string, format: date-time }
         imprimeLe: { type: ["string", "null"], format: date-time }
+        verificationUrl: { type: ["string", "null"] }
+    PublicPlaque:
+      type: object
+      required: [ficheNo, plaqueNo, version, actuelle, commune, quartier, localite, avenue, parcelleNo, statut, genereLe]
+      properties:
+        ficheNo: { type: string }
+        plaqueNo: { type: string }
+        version: { type: integer }
+        actuelle: { type: boolean }
+        commune: { type: string }
+        quartier: { type: string }
+        localite: { type: ["string", "null"] }
+        avenue: { type: string }
+        parcelleNo: { type: string }
+        statut: { type: string, enum: [generee, a_reimprimer, imprimee] }
+        genereLe: { type: string, format: date-time }
     RubriqueSettings:
       type: object
       required: [adressage, hygiene, dechets, facade, drainage, activites, remarques, avis]

@@ -1,5 +1,5 @@
 import { useParams, Link } from 'wouter';
-import { useGetFiche, useGetRubriqueSettings, useDecideFiche, useGeneratePlaque, getGetFicheQueryKey, getGetRubriqueSettingsQueryKey, type Fiche } from '@workspace/api-client-react';
+import { useGetFiche, useGetRubriqueSettings, useListPlaques, useDecideFiche, useGeneratePlaque, getGetFicheQueryKey, getGetRubriqueSettingsQueryKey, getListPlaquesQueryKey, type Fiche } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -52,6 +52,9 @@ export default function FicheDetail({ exampleFiche }: { exampleFiche?: Fiche }) 
   const { data: rubriqueSettings, isLoading: isRubriqueSettingsLoading, error: rubriqueSettingsError } = useGetRubriqueSettings({
     query: { queryKey: getGetRubriqueSettingsQueryKey(), enabled: !isExample, refetchInterval: 30_000 },
   });
+  const { data: plaques } = useListPlaques(undefined, {
+    query: { queryKey: getListPlaquesQueryKey(), enabled: !isExample && Boolean(id) && savedFiche?.statutFiche === 'validee' },
+  });
   const fiche = exampleFiche ?? savedFiche;
 
   const decideFiche = useDecideFiche();
@@ -85,6 +88,7 @@ export default function FicheDetail({ exampleFiche }: { exampleFiche?: Fiche }) 
     generatePlaque.mutate({ id: fiche.id }, {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getGetFicheQueryKey(fiche.id) });
+        queryClient.invalidateQueries({ queryKey: getListPlaquesQueryKey() });
         toast({ title: 'Plaque générée', description: 'Le design SVG de la plaque a été créé et ajouté à la file d\'impression.' });
       },
       onError: () => {
@@ -105,7 +109,7 @@ export default function FicheDetail({ exampleFiche }: { exampleFiche?: Fiche }) 
   const year = dateProsp.getFullYear();
   const yearShort = year.toString().slice(2);
   const ficheUrl = !isExample && fiche.statutFiche === 'validee'
-    ? new URL(`${import.meta.env.BASE_URL}fiches/${encodeURIComponent(fiche.id)}`, window.location.origin).toString()
+    ? plaques?.filter(p => p.ficheId === fiche.id).sort((a, b) => b.version - a.version)[0]?.verificationUrl
     : null;
 
   const tdClass = "border border-black p-1 text-black";
@@ -265,12 +269,12 @@ export default function FicheDetail({ exampleFiche }: { exampleFiche?: Fiche }) 
                      level="M"
                      bgColor="#ffffff"
                      fgColor="#000000"
-                     title={`Ouvrir la fiche validée ${fiche.ficheNo} (connexion requise)`}
+                      title={`Informations publiques sur la plaque ${fiche.ficheNo}`}
                    />
-                   <span className="text-[7px] leading-none mt-1 text-black">Fiche validée · accès réservé</span>
+                    <span className="text-[7px] leading-none mt-1 text-black">Informations publiques</span>
                  </>
                ) : (
-                 <span className="italic">{isExample ? 'Exemple — sans QR' : 'QR après validation'}</span>
+                  <span className="italic">{isExample ? 'Exemple — sans QR' : 'QR après génération de la plaque'}</span>
                )}
             </div>
           </div>

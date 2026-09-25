@@ -109,6 +109,31 @@ export const ListCommunesResponseItem = zod.object({
 export const ListCommunesResponse = zod.array(ListCommunesResponseItem)
 
 
+/**
+ * Informations limitées sur une plaque, accessibles sans connexion via son QR.
+ */
+export const getPublicPlaqueQueryCodeRegExp = new RegExp('^[A-Za-z0-9_-]{43}$');
+
+
+export const GetPublicPlaqueQueryParams = zod.object({
+  "code": zod.coerce.string().regex(getPublicPlaqueQueryCodeRegExp)
+})
+
+export const GetPublicPlaqueResponse = zod.object({
+  "ficheNo": zod.string(),
+  "plaqueNo": zod.string(),
+  "version": zod.number().int(),
+  "actuelle": zod.boolean(),
+  "commune": zod.string(),
+  "quartier": zod.string(),
+  "localite": zod.string().nullable(),
+  "avenue": zod.string(),
+  "parcelleNo": zod.string(),
+  "statut": zod.enum(['generee', 'a_reimprimer', 'imprimee']),
+  "genereLe": zod.coerce.date()
+})
+
+
 export const GetDashboardQueryParams = zod.object({
   "commune": zod.coerce.string().optional()
 })
@@ -516,7 +541,8 @@ export const GeneratePlaqueResponse = zod.object({
   "statut": zod.enum(['generee', 'a_reimprimer', 'imprimee']),
   "svg": zod.string(),
   "genereLe": zod.coerce.date(),
-  "imprimeLe": zod.coerce.date().nullish()
+  "imprimeLe": zod.coerce.date().nullish(),
+  "verificationUrl": zod.string().nullable()
 })
 
 
@@ -537,7 +563,8 @@ export const ListPlaquesResponseItem = zod.object({
   "statut": zod.enum(['generee', 'a_reimprimer', 'imprimee']),
   "svg": zod.string(),
   "genereLe": zod.coerce.date(),
-  "imprimeLe": zod.coerce.date().nullish()
+  "imprimeLe": zod.coerce.date().nullish(),
+  "verificationUrl": zod.string().nullable()
 })
 export const ListPlaquesResponse = zod.array(ListPlaquesResponseItem)
 
@@ -558,7 +585,8 @@ export const MarkPlaquePrintedResponse = zod.object({
   "statut": zod.enum(['generee', 'a_reimprimer', 'imprimee']),
   "svg": zod.string(),
   "genereLe": zod.coerce.date(),
-  "imprimeLe": zod.coerce.date().nullish()
+  "imprimeLe": zod.coerce.date().nullish(),
+  "verificationUrl": zod.string().nullable()
 })
 
 

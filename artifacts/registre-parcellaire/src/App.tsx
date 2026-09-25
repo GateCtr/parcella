@@ -29,6 +29,7 @@ const Parametres = lazy(() => import('@/pages/parametres'));
 const Utilisateurs = lazy(() => import('@/pages/utilisateurs'));
 const PlaqueModele = lazy(() => import('@/pages/plaques/modele'));
 const FichePlaque = lazy(() => import('@/pages/plaques/fiche-plaque'));
+const PublicVerification = lazy(() => import('@/pages/public-verification'));
 
 const handleUnauthorized = (error: unknown) => {
   if (
@@ -155,17 +156,23 @@ function RoutedErrorBoundary({ children }: { children: ReactNode }) {
   return <ErrorBoundary resetKey={location}>{children}</ErrorBoundary>;
 }
 
+function AppRoutes() {
+  const [location] = useLocation();
+  if (location === '/verification') {
+    return <RoutedErrorBoundary><Suspense fallback={<DataSpinner />}><PublicVerification /></Suspense></RoutedErrorBoundary>;
+  }
+  return <AuthProvider><Router /></AuthProvider>;
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <TooltipProvider>
-          <WouterRouter base={basePath}>
-            <Router />
-          </WouterRouter>
-          <Toaster />
-        </TooltipProvider>
-      </AuthProvider>
+      <TooltipProvider>
+        <WouterRouter base={basePath}>
+          <AppRoutes />
+        </WouterRouter>
+        <Toaster />
+      </TooltipProvider>
     </QueryClientProvider>
   );
 }

@@ -1,6 +1,6 @@
 import type { fichesTable } from "@workspace/db";
-import QRCode from "qrcode";
 import kinshasaSeal from "../assets/kinshasa-seal.png";
+import { plaqueQrPath } from "./plaque-qr";
 
 type FicheRow = typeof fichesTable.$inferSelect;
 
@@ -27,27 +27,17 @@ function textLine(label: string, y: number, centerX = 535, maxWidth = 780) {
   return `<text x="${centerX}" y="${y}" text-anchor="middle" fill="#193761" font-family="Arial Narrow,DejaVu Sans Condensed,Arial,sans-serif" font-weight="900" font-stretch="condensed" font-size="${fontSize}"${fit}>${xml(label)}</text>`;
 }
 
-export function plaqueSvg(f: FicheRow, plaqueNo: string, ficheUrl: string) {
+export function plaqueSvg(f: FicheRow, plaqueNo: string, verificationUrl: string) {
   const isRue = /^rue\b/i.test(f.avenue.trim());
   const address = f.avenue.replace(/^(?:av(?:enue)?|rue)[.\s]+/i, "").trim();
   const addressKey = encodeURIComponent(JSON.stringify([f.parcelleNo, f.avenue, f.localite ?? "", f.quartier, f.commune])).replace(/'/g, "%27");
   const numberFontSize = Math.min(230, Math.max(48, Math.floor(760 / (f.parcelleNo.length * 0.65))));
   const numberFit = numberFontSize * f.parcelleNo.length * 0.65 > 760 ? ' textLength="760" lengthAdjust="spacingAndGlyphs"' : "";
-  const qr = QRCode.create(ficheUrl, { errorCorrectionLevel: "M" }).modules;
   // Align the QR's bottom edge with the C/ address baseline.
   const qrX = 956;
   const qrSize = 128;
   const qrY = 650 - qrSize;
   const quietZone = 18;
-  const cell = qrSize / qr.size;
-  const modules: string[] = [];
-  for (let row = 0; row < qr.size; row++) {
-    for (let column = 0; column < qr.size; column++) {
-      if (qr.get(row, column)) {
-        modules.push(`M${(qrX + column * cell).toFixed(2)} ${(qrY + row * cell).toFixed(2)}h${cell.toFixed(2)}v${cell.toFixed(2)}h-${cell.toFixed(2)}z`);
-      }
-    }
-  }
 
   const border = "M112 24 H1088 C1088 63 1114 83 1176 83 V717 C1114 717 1088 737 1088 776 H112 C112 737 86 717 24 717 V83 C86 83 112 63 112 24 Z";
   return `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800" role="img" data-address-key="${addressKey}" aria-label="Plaque parcellaire ${xml(plaqueNo)}">
@@ -85,6 +75,6 @@ export function plaqueSvg(f: FicheRow, plaqueNo: string, ficheUrl: string) {
  ${textLine(`Q/ ${f.quartier.toUpperCase()}`, 564)}
  ${textLine(`C/ ${f.commune.toUpperCase()}`, 650)}
  <rect x="${qrX - quietZone}" y="${qrY - quietZone}" width="${qrSize + quietZone * 2}" height="${qrSize + quietZone * 2}" fill="#fff"/>
-<path d="${modules.join("")}" fill="#111"/>
+ ${plaqueQrPath(verificationUrl)}
 </svg>`;
 }
