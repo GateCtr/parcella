@@ -3,6 +3,7 @@ import pinoHttp from "pino-http";
 import router from "./routes";
 import { logger } from "./lib/logger";
 import { loadCurrentUser, protectUnsafeRequests } from "./middlewares/session";
+import { errorHandler } from "./middlewares/error-handler";
 
 const app: Express = express();
 const trustedProxyHops = process.env.TRUST_PROXY_HOPS;
@@ -38,5 +39,7 @@ app.use(protectUnsafeRequests);
 app.use(loadCurrentUser);
 
 app.use("/api", router);
+
+app.use(errorHandler);
 
 export default app;
