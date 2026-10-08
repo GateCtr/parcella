@@ -1,5 +1,4 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { QRCodeSVG } from 'qrcode.react';
 
 interface PlaquePreviewProps {
   parcelleNo: string;
@@ -7,11 +6,10 @@ interface PlaquePreviewProps {
   localite?: string | null;
   quartier: string;
   commune: string;
-  qrValue?: string;
   isFictive?: boolean;
 }
 
-export function PlaquePreview({ parcelleNo, avenue, localite, quartier, commune, qrValue, isFictive }: PlaquePreviewProps) {
+export function PlaquePreview({ parcelleNo, avenue, localite, quartier, commune, isFictive }: PlaquePreviewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
   const isRue = /^rue\b/i.test(avenue.trim());
@@ -80,23 +78,12 @@ export function PlaquePreview({ parcelleNo, avenue, localite, quartier, commune,
               </div>
             </div>
 
-            {/* Pied de page : Adresse et QR */}
-            <div className="flex justify-between items-end z-10 relative">
-               <div className="flex flex-col gap-1 text-[38px] font-extrabold text-[#0a1f5c] uppercase tracking-tight leading-[1.05]">
-                 <div className="relative h-10"><span className="absolute left-[384px] top-0 -translate-x-1/2 whitespace-nowrap">{isRue ? 'RUE' : 'AV.'} {address}</span></div>
-                 <div className="relative h-10"><span className="absolute left-[384px] top-0 -translate-x-1/2 whitespace-nowrap">LOC/ {localite?.trim() || '—'}</span></div>
-                <div>Q/ {quartier}</div>
-                <div>C/ {commune}</div>
-              </div>
-              <div className="w-[150px] h-[150px] bg-white border-[6px] border-[#0a1f5c] p-2 flex items-center justify-center shrink-0">
-                {qrValue ? (
-                  <QRCodeSVG value={qrValue} size={124} level="H" />
-                ) : (
-                  <div className="w-full h-full bg-gray-50 flex items-center justify-center text-gray-400 text-sm font-semibold text-center p-2 uppercase border border-dashed border-gray-300">
-                    {isFictive ? 'Exemple QR' : 'Non Généré'}
-                  </div>
-                )}
-              </div>
+            {/* Pied de page : Adresse (centré, sans QR) */}
+            <div className="flex flex-col items-center gap-1 z-10 relative text-[38px] font-extrabold text-[#0a1f5c] uppercase tracking-tight leading-[1.05] text-center">
+              <div className="whitespace-nowrap">{isRue ? 'RUE' : 'AV.'} {address}</div>
+              <div className="whitespace-nowrap">LOC/ {localite?.trim() || '—'}</div>
+              <div className="whitespace-nowrap">Q/ {quartier}</div>
+              <div className="whitespace-nowrap">C/ {commune}</div>
             </div>
           </div>
         </div>

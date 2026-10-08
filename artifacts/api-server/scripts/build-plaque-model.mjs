@@ -20,7 +20,6 @@ const { plaqueSvg } = module.exports;
 const example = plaqueSvg(
   { parcelleNo: "14", avenue: "Tshela", localite: "Foire Agricole", quartier: "Mama Yemo", commune: "Mont-Ngafula" },
   "EXEMPLE",
-  "EXEMPLE FICTIF",
 );
 const sample = example.replace(
   /<\/svg>$/,

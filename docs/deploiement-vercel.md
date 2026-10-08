@@ -4,7 +4,7 @@ Ce dépôt déploie **un seul projet Vercel** : le frontend Vite est servi comme
 
 ## Avant le premier déploiement
 
-1. Importer le dépôt dans Vercel en gardant **la racine du dépôt** comme *Root Directory*. Le build `pnpm run build:vercel` est défini dans `vercel.json` ; Vercel détecte `pnpm-lock.yaml`. Ne pas choisir `artifacts/registre-parcellaire` comme racine : la fonction et les bibliothèques partagées se trouvent ailleurs dans le dépôt.
+1. Importer le dépôt dans Vercel en gardant **la racine du dépôt** comme *Root Directory*. La configuration unique est le fichier **`vercel.json` à la racine** (le seul lu par Vercel) : il définit `framework: vite`, le build `pnpm run build:vercel`, le dossier de sortie du frontend `artifacts/registre-parcellaire/dist/public`, et les réécritures qui envoient `/api/*` vers la fonction `api/index.ts` et tous les autres chemins vers `index.html`. Vercel détecte `pnpm-lock.yaml`. **Ne pas choisir `artifacts/registre-parcellaire` ni `artifacts/api-server` comme Root Directory** : avec une sous-racine, Vercel ne verrait qu'une seule partie (par exemple l'API seule) et le frontend ne serait pas détecté. La fonction et les bibliothèques partagées se trouvent ailleurs dans le dépôt et ne sont accessibles que depuis la racine.
 2. Prévoir une **base PostgreSQL externe accessible depuis Vercel**, distincte de la base de développement Replit. La configuration ne crée pas de base et ne transfère aucune donnée. Pour une base externe **neuve et vide**, fournir son URL à `EXTERNAL_DATABASE_URL` dans un environnement d'administration sécurisé puis exécuter **une seule fois**, avant la mise en ligne :
 
    ```sh
