@@ -1,6 +1,7 @@
-import { lazy, ReactNode, Suspense } from 'react';
+import { ReactNode, Suspense, useEffect } from 'react';
 import { QueryClient, QueryClientProvider, QueryCache, MutationCache } from '@tanstack/react-query';
 import { ErrorBoundary } from '@/components/error-boundary';
+import { lazyWithReload, markChunkLoadSuccess } from '@/lib/lazy-with-reload';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
@@ -19,17 +20,17 @@ import SignInPage from '@/pages/sign-in';
 import DashboardLayout from '@/components/layout/dashboard-layout';
 import { DataSpinner } from '@/components/data-spinner';
 
-const Dashboard = lazy(() => import('@/pages/dashboard'));
-const FichesList = lazy(() => import('@/pages/fiches/list'));
-const FicheNew = lazy(() => import('@/pages/fiches/new'));
-const FicheDetail = lazy(() => import('@/pages/fiches/detail'));
-const FicheExample = lazy(() => import('@/pages/fiches/example'));
-const Imprimerie = lazy(() => import('@/pages/imprimerie'));
-const Parametres = lazy(() => import('@/pages/parametres'));
-const Utilisateurs = lazy(() => import('@/pages/utilisateurs'));
-const PlaqueModele = lazy(() => import('@/pages/plaques/modele'));
-const FichePlaque = lazy(() => import('@/pages/plaques/fiche-plaque'));
-const PublicVerification = lazy(() => import('@/pages/public-verification'));
+const Dashboard = lazyWithReload(() => import('@/pages/dashboard'));
+const FichesList = lazyWithReload(() => import('@/pages/fiches/list'));
+const FicheNew = lazyWithReload(() => import('@/pages/fiches/new'));
+const FicheDetail = lazyWithReload(() => import('@/pages/fiches/detail'));
+const FicheExample = lazyWithReload(() => import('@/pages/fiches/example'));
+const Imprimerie = lazyWithReload(() => import('@/pages/imprimerie'));
+const Parametres = lazyWithReload(() => import('@/pages/parametres'));
+const Utilisateurs = lazyWithReload(() => import('@/pages/utilisateurs'));
+const PlaqueModele = lazyWithReload(() => import('@/pages/plaques/modele'));
+const FichePlaque = lazyWithReload(() => import('@/pages/plaques/fiche-plaque'));
+const PublicVerification = lazyWithReload(() => import('@/pages/public-verification'));
 
 const handleUnauthorized = (error: unknown) => {
   if (
@@ -168,6 +169,12 @@ function AppRoutes() {
 }
 
 function App() {
+  // Once the app has mounted successfully, clear the stale-chunk reload guard so
+  // a future deployment can trigger a one-time reload again if needed.
+  useEffect(() => {
+    markChunkLoadSuccess();
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
