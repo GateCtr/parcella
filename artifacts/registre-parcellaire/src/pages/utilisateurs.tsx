@@ -241,7 +241,7 @@ export default function Utilisateurs() {
         </Alert>
       )}
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:hidden">
+      <div className="grid gap-3 sm:grid-cols-2 lg:hidden">
         {users?.map((user) => {
           const isPrincipal = user.role === 'admin_principal';
           return (
@@ -296,15 +296,15 @@ export default function Utilisateurs() {
         )}
       </div>
 
-      <div className="hidden overflow-x-auto rounded-md border xl:block">
+      <div className="hidden rounded-md border lg:block">
         <Table className="min-w-[700px]">
           <TableHeader>
             <TableRow>
-              <TableHead>Email</TableHead>
-              <TableHead>Rôle</TableHead>
-              <TableHead>Créé le</TableHead>
-              <TableHead>Actif</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead className="whitespace-nowrap">Email</TableHead>
+              <TableHead className="whitespace-nowrap">Rôle</TableHead>
+              <TableHead className="whitespace-nowrap">Créé le</TableHead>
+              <TableHead className="whitespace-nowrap">Actif</TableHead>
+              <TableHead className="whitespace-nowrap text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

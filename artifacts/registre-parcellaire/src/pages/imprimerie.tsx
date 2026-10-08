@@ -59,8 +59,8 @@ export default function ImprimeriePage() {
           </p>
         ) : (
           <>
-            {/* Vue mobile : cartes */}
-            <ul className="divide-y md:hidden">
+            {/* Vue mobile + tablette : cartes */}
+            <ul className="divide-y lg:hidden">
               {pageItems.map((plaque) => (
                 <li key={plaque.id} className="p-4">
                   <div className="flex items-start justify-between gap-3">
@@ -104,17 +104,17 @@ export default function ImprimeriePage() {
               ))}
             </ul>
 
-            {/* Vue bureau : tableau */}
-            <div className="hidden md:block overflow-x-auto">
-              <Table>
+            {/* Vue bureau : tableau (défilement horizontal si nécessaire) */}
+            <div className="hidden lg:block">
+              <Table className="min-w-[820px]">
                 <TableHeader>
                   <TableRow>
-                    <TableHead>N° Plaque</TableHead>
-                    <TableHead>Fiche associée</TableHead>
-                    <TableHead>Localisation</TableHead>
-                    <TableHead>Date de génération</TableHead>
-                    <TableHead>Statut</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead className="whitespace-nowrap">N° Plaque</TableHead>
+                    <TableHead className="whitespace-nowrap">Fiche associée</TableHead>
+                    <TableHead className="whitespace-nowrap">Localisation</TableHead>
+                    <TableHead className="whitespace-nowrap">Date de génération</TableHead>
+                    <TableHead className="whitespace-nowrap">Statut</TableHead>
+                    <TableHead className="whitespace-nowrap text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

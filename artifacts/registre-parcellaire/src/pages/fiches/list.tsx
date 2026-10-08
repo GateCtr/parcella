@@ -108,8 +108,8 @@ export default function FichesList() {
           </p>
         ) : (
           <>
-            {/* Vue mobile : cartes */}
-            <ul className="divide-y md:hidden">
+            {/* Vue mobile + tablette : cartes */}
+            <ul className="divide-y lg:hidden">
               {pageItems.map((fiche) => (
                 <li key={fiche.id}>
                   <a
@@ -139,17 +139,17 @@ export default function FichesList() {
               ))}
             </ul>
 
-            {/* Vue bureau : tableau */}
-            <div className="hidden md:block overflow-x-auto">
-              <Table>
+            {/* Vue bureau : tableau (défilement horizontal si nécessaire) */}
+            <div className="hidden lg:block">
+              <Table className="min-w-[760px]">
                 <TableHeader>
                   <TableRow>
-                    <TableHead>N° Fiche</TableHead>
-                    <TableHead>Propriétaire</TableHead>
-                    <TableHead>Localisation</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Statut</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead className="whitespace-nowrap">N° Fiche</TableHead>
+                    <TableHead className="whitespace-nowrap">Propriétaire</TableHead>
+                    <TableHead className="whitespace-nowrap">Localisation</TableHead>
+                    <TableHead className="whitespace-nowrap">Date</TableHead>
+                    <TableHead className="whitespace-nowrap">Statut</TableHead>
+                    <TableHead className="whitespace-nowrap text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
