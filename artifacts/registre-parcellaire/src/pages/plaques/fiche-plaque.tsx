@@ -45,6 +45,18 @@ export default function FichePlaque() {
     || !latestPlaque.svg.includes(`data-address-key="${addressKey}"`)
   ));
 
+  // Les plaques imprimées / téléchargées sont nommées d'après l'avenue (ou rue)
+  // et le numéro de parcelle, pas d'après le numéro de fiche interne.
+  // Ex. "Av. Tshela" + parcelle "14" → libellé "Tshela 14", nom de fichier "Tshela-14".
+  const addressForName = fiche.avenue.replace(/^(?:av(?:enue)?|rue)[.\s]+/i, '').trim();
+  const plaqueDisplayName = `${addressForName} ${fiche.parcelleNo}`.trim();
+  const plaqueFileBaseName =
+    plaqueDisplayName
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // enlève les accents
+      .replace(/[^a-zA-Z0-9]+/g, '-')                   // caractères sûrs pour un nom de fichier
+      .replace(/^-+|-+$/g, '')
+    || 'plaque';
+
   const handleGenerate = () => {
     generatePlaque.mutate({ id: fiche.id }, {
       onSuccess: () => {
@@ -77,9 +89,25 @@ export default function FichePlaque() {
     const url = URL.createObjectURL(new Blob([latestPlaque.svg], { type: 'image/svg+xml' }));
     const link = document.createElement('a');
     link.href = url;
-    link.download = `plaque-${fiche.ficheNo.replace(/[^a-zA-Z0-9_-]/g, '-')}-v${latestPlaque.version}.svg`;
+    link.download = `${plaqueFileBaseName}.svg`;
     link.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+
+  // Le nom proposé par le navigateur pour l'impression / le PDF provient du
+  // titre du document. On le force sur "avenue + numéro de parcelle" le temps
+  // de l'impression, puis on le restaure.
+  const handlePrint = () => {
+    const previousTitle = document.title;
+    document.title = plaqueDisplayName;
+    const restore = () => {
+      document.title = previousTitle;
+      window.removeEventListener('afterprint', restore);
+    };
+    window.addEventListener('afterprint', restore);
+    window.print();
+    // Filet de sécurité si l'événement afterprint ne se déclenche pas.
+    setTimeout(restore, 1000);
   };
 
   return (
@@ -123,7 +151,7 @@ export default function FichePlaque() {
                    <CheckCircle className="mr-2 h-4 w-4" /> Confirmer impression
                 </Button>
               )}
-              <Button variant="outline" onClick={() => window.print()} disabled={!verificationReady}>
+              <Button variant="outline" onClick={handlePrint} disabled={!verificationReady}>
                 <Printer className="mr-2 h-4 w-4" /> Imprimer / PDF
               </Button>
               {!legacyPlaque && (
