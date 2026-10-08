@@ -1,5 +1,5 @@
 import { useParams, Link } from 'wouter';
-import { useGetFiche, useGetRubriqueSettings, useListPlaques, useDecideFiche, useGeneratePlaque, getGetFicheQueryKey, getGetRubriqueSettingsQueryKey, getListPlaquesQueryKey, type Fiche } from '@workspace/api-client-react';
+import { useGetFiche, useGetRubriqueSettings, useDecideFiche, useGeneratePlaque, getGetFicheQueryKey, getGetRubriqueSettingsQueryKey, getListPlaquesQueryKey, type Fiche } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -10,7 +10,6 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import React from 'react';
-import { QRCodeSVG } from 'qrcode.react';
 import { useAuth } from '@/hooks/use-auth';
 
 // Identical star geometry to the flag in the generated plaque SVG.
@@ -58,9 +57,6 @@ export default function FicheDetail({ exampleFiche }: { exampleFiche?: Fiche }) 
   });
   const { data: rubriqueSettings, isLoading: isRubriqueSettingsLoading, error: rubriqueSettingsError } = useGetRubriqueSettings({
     query: { queryKey: getGetRubriqueSettingsQueryKey(), enabled: !isExample, refetchInterval: 30_000 },
-  });
-  const { data: plaques } = useListPlaques({ ficheId: id ?? '' }, {
-    query: { enabled: !isExample && Boolean(id) && savedFiche?.statutFiche === 'validee' },
   });
   const fiche = exampleFiche ?? savedFiche;
 
@@ -115,9 +111,6 @@ export default function FicheDetail({ exampleFiche }: { exampleFiche?: Fiche }) 
   const quarter = Math.floor(dateProsp.getMonth() / 3) + 1;
   const year = dateProsp.getFullYear();
   const yearShort = year.toString().slice(2);
-  const ficheUrl = !isExample && fiche.statutFiche === 'validee'
-    ? plaques?.filter(p => p.ficheId === fiche.id).sort((a, b) => b.version - a.version)[0]?.verificationUrl
-    : null;
 
   const tdClass = "border border-black p-1 text-black";
   const thClass = "border border-black bg-[#eaf1f8] font-bold p-1 text-black text-left";
@@ -271,23 +264,6 @@ export default function FicheDetail({ exampleFiche }: { exampleFiche?: Fiche }) 
               </div>
             </div>
 
-              <div className="border border-l-0 border-black w-[6.5rem] h-[6.5rem] flex flex-col items-center justify-center bg-white text-center text-[9px] text-gray-500">
-               {ficheUrl ? (
-                 <>
-                   <QRCodeSVG
-                     value={ficheUrl}
-                     size={76}
-                     level="M"
-                     bgColor="#ffffff"
-                     fgColor="#000000"
-                      title={`Informations publiques sur la plaque ${fiche.ficheNo}`}
-                   />
-                    <span className="text-[7px] leading-none mt-1 text-black">Informations publiques</span>
-                 </>
-               ) : (
-                  <span className="italic">{isExample ? 'Exemple — sans QR' : 'QR après génération de la plaque'}</span>
-               )}
-            </div>
              </div>
           </div>
 

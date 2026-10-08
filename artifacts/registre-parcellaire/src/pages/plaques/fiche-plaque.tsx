@@ -36,7 +36,7 @@ export default function FichePlaque() {
   const fichePlaques = plaques?.filter(p => p.ficheId === id).sort((a, b) => b.version - a.version);
   const latestPlaque = fichePlaques?.[0];
   const hasSvg = Boolean(latestPlaque?.svg);
-  const qrReady = Boolean(latestPlaque?.verificationUrl);
+  const verificationReady = Boolean(latestPlaque?.verificationUrl);
   const addressKey = encodeURIComponent(JSON.stringify([
     fiche.parcelleNo, fiche.avenue, fiche.localite ?? '', fiche.quartier, fiche.commune,
   ])).replace(/'/g, '%27');
@@ -114,7 +114,7 @@ export default function FichePlaque() {
             </Button>
           ) : (
             <>
-              {qrReady && latestPlaque?.statut !== 'imprimee' && canGenerate && (
+              {verificationReady && latestPlaque?.statut !== 'imprimee' && canGenerate && (
                 <Button
                   onClick={handleMarkPrinted}
                   disabled={markPrinted.isPending}
@@ -123,11 +123,11 @@ export default function FichePlaque() {
                    <CheckCircle className="mr-2 h-4 w-4" /> Confirmer impression
                 </Button>
               )}
-              <Button variant="outline" onClick={() => window.print()} disabled={!qrReady}>
+              <Button variant="outline" onClick={() => window.print()} disabled={!verificationReady}>
                 <Printer className="mr-2 h-4 w-4" /> Imprimer / PDF
               </Button>
               {!legacyPlaque && (
-                <Button variant="outline" onClick={handleDownload} disabled={!qrReady} data-testid="button-download-plaque">
+                <Button variant="outline" onClick={handleDownload} disabled={!verificationReady} data-testid="button-download-plaque">
                   <Download className="mr-2 h-4 w-4" /> Télécharger SVG vectoriel
                 </Button>
               )}
@@ -138,11 +138,11 @@ export default function FichePlaque() {
 
       <LocaliteEditor fiche={fiche} />
 
-      {hasSvg && !qrReady && (
+      {hasSvg && !verificationReady && (
         <Alert variant="destructive" className="no-print">
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>QR non prêt pour l'impression</AlertTitle>
-          <AlertDescription>Choisissez et configurez d'abord un domaine public permanent, puis actualisez les QR des plaques enregistrées. L'impression et le téléchargement restent désactivés.</AlertDescription>
+          <AlertTitle>Vérification non prête pour l'impression</AlertTitle>
+          <AlertDescription>Choisissez et configurez d'abord un domaine public permanent pour activer la vérification publique des plaques. L'impression et le téléchargement restent désactivés.</AlertDescription>
         </Alert>
       )}
 
@@ -164,7 +164,7 @@ export default function FichePlaque() {
           <AlertCircle className="h-4 w-4 text-blue-600" />
           <AlertTitle className="text-blue-900 font-semibold">Prévisualisation</AlertTitle>
           <AlertDescription className="text-blue-800">
-            Ceci est un aperçu HTML du rendu final. {canGenerate ? 'Veuillez cliquer sur "Générer la plaque" pour figer le QR code, créer le SVG officiel, et l\'ajouter à la file d\'impression.' : 'En attente de génération par un validateur.'}
+            Ceci est un aperçu HTML du rendu final. {canGenerate ? 'Veuillez cliquer sur "Générer la plaque" pour créer le SVG officiel et l\'ajouter à la file d\'impression.' : 'En attente de génération par un validateur.'}
           </AlertDescription>
         </Alert>
       )}

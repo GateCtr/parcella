@@ -23,8 +23,6 @@ import {
 } from "@workspace/api-zod";
 import { decrypt, encrypt } from "../lib/crypto";
 import { plaqueSvg } from "../lib/plaque-svg";
-import { plaqueQrPath } from "../lib/plaque-qr";
-import { replacePlaqueQr } from "../lib/plaque-qr-migration";
 import { configuredVerificationOrigin, newVerificationCode, verificationHash, verificationUrl } from "../lib/public-verification";
 import { requireRole, requireUser } from "../middlewares/session";
 
@@ -46,10 +44,9 @@ function plaqueForCurrentOrigin(plaque: typeof plaquesTable.$inferSelect): { svg
     const token = decrypt(plaque.publicTokenEncrypted);
     const url = verificationUrl(token);
     if (verificationHash(token) !== plaque.publicTokenHash) return unavailable;
-    if (plaque.svg.includes(plaqueQrPath(url))) return { svg: plaque.svg, verificationUrl: url };
-    // An already printed plaque must never be silently changed: its physical QR still points elsewhere.
-    if (plaque.imprimeLe) return unavailable;
-    return { svg: replacePlaqueQr(plaque.svg, url), verificationUrl: url };
+    // The plaque SVG no longer embeds a QR, so it is independent of the verification
+    // origin: return it unchanged along with the public verification URL (by code).
+    return { svg: plaque.svg, verificationUrl: url };
   } catch {
     return unavailable;
   }
@@ -229,9 +226,8 @@ router.post("/fiches/:id/plaque", requireRole("admin_principal", "validateur"), 
   let link: string;
   try { link = verificationUrl(token); }
   catch { res.status(503).json({ error: "Domaine de vérification indisponible" }); return; }
-  const svg=plaqueSvg(f,plaqueNo,link);
-  const withoutQr = (value: string) => value.replace(/<path d="[^"]*" fill="#111"\/>\s*<\/svg>$/, "<qr/></svg>");
-  if (existing[0] && withoutQr(existing[0].svg) === withoutQr(svg)) {
+  const svg=plaqueSvg(f,plaqueNo);
+  if (existing[0] && existing[0].svg === svg) {
     res.status(409).json({error:"Plaque déjà générée"}); return;
   }
   const [plaque]=await db.insert(plaquesTable).values({
@@ -261,11 +257,11 @@ router.post("/plaques/:id/imprimer",requireRole("admin_principal", "validateur")
   const [current] = await db.select().from(plaquesTable).where(eq(plaquesTable.id,p.data.id));
   if (!current) { res.status(404).json({error:"Plaque introuvable"});return; }
   if (!current.publicTokenEncrypted || !current.publicTokenHash) {
-    res.status(409).json({error:"Cette plaque n'a pas de QR de vérification"});return;
+    res.status(409).json({error:"Cette plaque n'a pas de code de vérification"});return;
   }
   const view = plaqueForCurrentOrigin(current);
   if (!view.verificationUrl) {
-    res.status(409).json({error:"Le QR de cette plaque doit être actualisé avant l'impression"});return;
+    res.status(409).json({error:"Le code de vérification de cette plaque doit être actualisé avant l'impression"});return;
   }
   if (new URL(view.verificationUrl).origin !== origin) {
     res.status(409).json({error:"Domaine de vérification incompatible"});return;
