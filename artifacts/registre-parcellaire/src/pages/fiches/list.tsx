@@ -8,6 +8,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Search, Plus, Eye, MapPin, Calendar } from 'lucide-react';
 import { DataSpinner } from '@/components/data-spinner';
+import { DataPagination } from '@/components/data-pagination';
+import { usePagination } from '@/hooks/use-pagination';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
@@ -22,6 +24,9 @@ export default function FichesList() {
     commune: commune !== 'toutes' ? commune : undefined,
     statut: statut !== 'tous' ? statut : undefined,
   });
+
+  const { page, setPage, pageCount, pageItems, total, rangeStart, rangeEnd } =
+    usePagination(fiches, 10);
 
   const getStatutBadge = (statut: string) => {
     switch (statut) {
@@ -92,70 +97,113 @@ export default function FichesList() {
 
       <div className="bg-card border rounded-xl shadow-sm overflow-hidden">
         {isFetching && !loadingFiches && <DataSpinner compact label="Actualisation des fiches…" />}
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>N° Fiche</TableHead>
-                <TableHead>Propriétaire</TableHead>
-                <TableHead>Localisation</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Statut</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loadingFiches ? (
-                <TableRow><TableCell colSpan={6}><DataSpinner label="Chargement des fiches…" /></TableCell></TableRow>
-              ) : isError ? (
-                <TableRow><TableCell colSpan={6} className="h-32 text-center text-destructive">Impossible de charger les fiches.</TableCell></TableRow>
-              ) : fiches?.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="h-32 text-center text-muted-foreground">
-                    Aucune fiche trouvée correspondant à vos critères.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                fiches?.map((fiche) => (
-                  <TableRow key={fiche.id} className="hover:bg-muted/50">
-                    <TableCell className="font-medium">{fiche.ficheNo}</TableCell>
-                    <TableCell>{fiche.proprietaireNom}</TableCell>
-                    <TableCell>
-                      <div className="flex flex-col text-sm">
-                        <span className="flex items-center gap-1">
-                          <MapPin className="h-3 w-3 text-muted-foreground" />
-                          {fiche.commune}, {fiche.quartier}
-                        </span>
-                        <span className="text-muted-foreground text-xs ml-4">
-                          Av. {fiche.avenue}, N° {fiche.parcelleNo}
-                        </span>
+
+        {loadingFiches ? (
+          <DataSpinner label="Chargement des fiches…" />
+        ) : isError ? (
+          <p className="h-32 flex items-center justify-center text-center text-destructive">Impossible de charger les fiches.</p>
+        ) : total === 0 ? (
+          <p className="h-32 flex items-center justify-center text-center text-muted-foreground px-4">
+            Aucune fiche trouvée correspondant à vos critères.
+          </p>
+        ) : (
+          <>
+            {/* Vue mobile : cartes */}
+            <ul className="divide-y md:hidden">
+              {pageItems.map((fiche) => (
+                <li key={fiche.id}>
+                  <a
+                    href={`${import.meta.env.BASE_URL}fiches/${encodeURIComponent(fiche.id)}`}
+                    className="block p-4 hover:bg-muted/50"
+                    aria-label={`Voir la fiche ${fiche.ficheNo}`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="font-medium truncate">{fiche.ficheNo}</p>
+                        <p className="text-sm text-muted-foreground truncate">{fiche.proprietaireNom}</p>
                       </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1 text-sm">
-                        <Calendar className="h-3 w-3 text-muted-foreground" />
-                        {format(new Date(fiche.createdAt), "dd/MM/yyyy")}
-                      </div>
-                    </TableCell>
-                    <TableCell>
                       {getStatutBadge(fiche.statutFiche)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <a
-                        href={`${import.meta.env.BASE_URL}fiches/${encodeURIComponent(fiche.id)}`}
-                        className={cn(buttonVariants({ variant: 'ghost', size: 'icon' }))}
-                        title="Voir les détails"
-                        aria-label={`Voir la fiche ${fiche.ficheNo}`}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </a>
-                    </TableCell>
+                    </div>
+                    <div className="mt-2 flex flex-col gap-1 text-sm">
+                      <span className="flex items-center gap-1 text-muted-foreground">
+                        <MapPin className="h-3 w-3 shrink-0" />
+                        <span className="truncate">{fiche.commune}, {fiche.quartier} · Av. {fiche.avenue}, N° {fiche.parcelleNo}</span>
+                      </span>
+                      <span className="flex items-center gap-1 text-muted-foreground">
+                        <Calendar className="h-3 w-3 shrink-0" />
+                        {format(new Date(fiche.createdAt), "dd/MM/yyyy")}
+                      </span>
+                    </div>
+                  </a>
+                </li>
+              ))}
+            </ul>
+
+            {/* Vue bureau : tableau */}
+            <div className="hidden md:block overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>N° Fiche</TableHead>
+                    <TableHead>Propriétaire</TableHead>
+                    <TableHead>Localisation</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Statut</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
+                </TableHeader>
+                <TableBody>
+                  {pageItems.map((fiche) => (
+                    <TableRow key={fiche.id} className="hover:bg-muted/50">
+                      <TableCell className="font-medium">{fiche.ficheNo}</TableCell>
+                      <TableCell>{fiche.proprietaireNom}</TableCell>
+                      <TableCell>
+                        <div className="flex flex-col text-sm">
+                          <span className="flex items-center gap-1">
+                            <MapPin className="h-3 w-3 text-muted-foreground" />
+                            {fiche.commune}, {fiche.quartier}
+                          </span>
+                          <span className="text-muted-foreground text-xs ml-4">
+                            Av. {fiche.avenue}, N° {fiche.parcelleNo}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1 text-sm">
+                          <Calendar className="h-3 w-3 text-muted-foreground" />
+                          {format(new Date(fiche.createdAt), "dd/MM/yyyy")}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {getStatutBadge(fiche.statutFiche)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <a
+                          href={`${import.meta.env.BASE_URL}fiches/${encodeURIComponent(fiche.id)}`}
+                          className={cn(buttonVariants({ variant: 'ghost', size: 'icon' }))}
+                          title="Voir les détails"
+                          aria-label={`Voir la fiche ${fiche.ficheNo}`}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </a>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+
+            <DataPagination
+              page={page}
+              pageCount={pageCount}
+              onPageChange={setPage}
+              total={total}
+              rangeStart={rangeStart}
+              rangeEnd={rangeEnd}
+              itemLabel="fiche"
+            />
+          </>
+        )}
       </div>
     </div>
   );

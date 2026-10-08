@@ -4,7 +4,9 @@ import { Button, buttonVariants } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { DataSpinner } from '@/components/data-spinner';
-import { Printer, MapPin, Check, Eye } from 'lucide-react';
+import { DataPagination } from '@/components/data-pagination';
+import { usePagination } from '@/hooks/use-pagination';
+import { MapPin, Check, Eye } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { Link } from 'wouter';
@@ -19,6 +21,9 @@ export default function ImprimeriePage() {
   const { user } = useAuth();
 
   const canMarkPrinted = user?.role === 'admin_principal' || user?.role === 'validateur';
+
+  const { page, setPage, pageCount, pageItems, total, rangeStart, rangeEnd } =
+    usePagination(plaques, 10);
 
   const handleMarkPrinted = (id: string) => {
     markPrinted.mutate({ id }, {
@@ -43,82 +48,139 @@ export default function ImprimeriePage() {
 
       <div className="bg-card border rounded-xl shadow-sm overflow-hidden">
         {isFetching && !isLoading && <DataSpinner compact label="Actualisation des plaques…" />}
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>N° Plaque</TableHead>
-                <TableHead>Fiche associée</TableHead>
-                <TableHead>Localisation</TableHead>
-                <TableHead>Date de génération</TableHead>
-                <TableHead>Statut</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                <TableRow><TableCell colSpan={6}><DataSpinner label="Chargement des plaques…" /></TableCell></TableRow>
-              ) : isError ? (
-                <TableRow><TableCell colSpan={6} className="h-32 text-center text-destructive">Impossible de charger les plaques.</TableCell></TableRow>
-              ) : plaques?.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="h-32 text-center text-muted-foreground">
-                    Aucune plaque dans la file d'attente.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                plaques?.map((plaque) => (
-                  <TableRow key={plaque.id} className="hover:bg-muted/50">
-                    <TableCell className="font-bold text-primary">{plaque.plaqueNo}</TableCell>
-                    <TableCell className="font-mono text-sm">{plaque.ficheNo}</TableCell>
-                    <TableCell>
-                      <div className="flex flex-col text-sm">
-                        <span className="flex items-center gap-1">
-                          <MapPin className="h-3 w-3 text-muted-foreground" />
-                          {plaque.commune}, {plaque.quartier}
-                        </span>
-                        <span className="text-muted-foreground text-xs ml-4">
-                          Av. {plaque.avenue}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {format(new Date(plaque.genereLe), "dd/MM/yyyy HH:mm")}
-                    </TableCell>
-                    <TableCell>
-                      {plaque.statut === 'imprimee' ? (
-                        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Imprimée</Badge>
-                      ) : (
-                        <Badge variant="secondary" className="bg-primary/10 text-primary">En attente</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Link
-                          href={`/fiches/${plaque.ficheId}/plaque`}
-                          className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}
-                          title="Aperçu de la plaque"
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Link>
-                        {plaque.statut !== 'imprimee' && canMarkPrinted && (
-                          <Button
-                            variant="default"
-                            size="sm"
-                            onClick={() => handleMarkPrinted(plaque.id)}
-                            disabled={markPrinted.isPending}
-                          >
-                            <Check className="mr-1 h-4 w-4" /> Marquer imprimée
-                          </Button>
-                        )}
-                      </div>
-                    </TableCell>
+
+        {isLoading ? (
+          <DataSpinner label="Chargement des plaques…" />
+        ) : isError ? (
+          <p className="h-32 flex items-center justify-center text-center text-destructive">Impossible de charger les plaques.</p>
+        ) : total === 0 ? (
+          <p className="h-32 flex items-center justify-center text-center text-muted-foreground px-4">
+            Aucune plaque dans la file d'attente.
+          </p>
+        ) : (
+          <>
+            {/* Vue mobile : cartes */}
+            <ul className="divide-y md:hidden">
+              {pageItems.map((plaque) => (
+                <li key={plaque.id} className="p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-bold text-primary truncate">{plaque.plaqueNo}</p>
+                      <p className="font-mono text-xs text-muted-foreground truncate">{plaque.ficheNo}</p>
+                    </div>
+                    {plaque.statut === 'imprimee' ? (
+                      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Imprimée</Badge>
+                    ) : (
+                      <Badge variant="secondary" className="bg-primary/10 text-primary">En attente</Badge>
+                    )}
+                  </div>
+                  <div className="mt-2 flex flex-col gap-1 text-sm text-muted-foreground">
+                    <span className="flex items-center gap-1">
+                      <MapPin className="h-3 w-3 shrink-0" />
+                      <span className="truncate">{plaque.commune}, {plaque.quartier} · Av. {plaque.avenue}</span>
+                    </span>
+                    <span>{format(new Date(plaque.genereLe), "dd/MM/yyyy HH:mm")}</span>
+                  </div>
+                  <div className="mt-3 flex gap-2">
+                    <Link
+                      href={`/fiches/${plaque.ficheId}/plaque`}
+                      className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'flex-1 justify-center')}
+                    >
+                      <Eye className="mr-1 h-4 w-4" /> Aperçu
+                    </Link>
+                    {plaque.statut !== 'imprimee' && canMarkPrinted && (
+                      <Button
+                        variant="default"
+                        size="sm"
+                        className="flex-1 justify-center"
+                        onClick={() => handleMarkPrinted(plaque.id)}
+                        disabled={markPrinted.isPending}
+                      >
+                        <Check className="mr-1 h-4 w-4" /> Marquer imprimée
+                      </Button>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+
+            {/* Vue bureau : tableau */}
+            <div className="hidden md:block overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>N° Plaque</TableHead>
+                    <TableHead>Fiche associée</TableHead>
+                    <TableHead>Localisation</TableHead>
+                    <TableHead>Date de génération</TableHead>
+                    <TableHead>Statut</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
+                </TableHeader>
+                <TableBody>
+                  {pageItems.map((plaque) => (
+                    <TableRow key={plaque.id} className="hover:bg-muted/50">
+                      <TableCell className="font-bold text-primary">{plaque.plaqueNo}</TableCell>
+                      <TableCell className="font-mono text-sm">{plaque.ficheNo}</TableCell>
+                      <TableCell>
+                        <div className="flex flex-col text-sm">
+                          <span className="flex items-center gap-1">
+                            <MapPin className="h-3 w-3 text-muted-foreground" />
+                            {plaque.commune}, {plaque.quartier}
+                          </span>
+                          <span className="text-muted-foreground text-xs ml-4">
+                            Av. {plaque.avenue}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {format(new Date(plaque.genereLe), "dd/MM/yyyy HH:mm")}
+                      </TableCell>
+                      <TableCell>
+                        {plaque.statut === 'imprimee' ? (
+                          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Imprimée</Badge>
+                        ) : (
+                          <Badge variant="secondary" className="bg-primary/10 text-primary">En attente</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Link
+                            href={`/fiches/${plaque.ficheId}/plaque`}
+                            className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}
+                            title="Aperçu de la plaque"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Link>
+                          {plaque.statut !== 'imprimee' && canMarkPrinted && (
+                            <Button
+                              variant="default"
+                              size="sm"
+                              onClick={() => handleMarkPrinted(plaque.id)}
+                              disabled={markPrinted.isPending}
+                            >
+                              <Check className="mr-1 h-4 w-4" /> Marquer imprimée
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+
+            <DataPagination
+              page={page}
+              pageCount={pageCount}
+              onPageChange={setPage}
+              total={total}
+              rangeStart={rangeStart}
+              rangeEnd={rangeEnd}
+              itemLabel="plaque"
+            />
+          </>
+        )}
       </div>
     </div>
   );
