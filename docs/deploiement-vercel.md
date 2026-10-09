@@ -53,4 +53,19 @@ Pour les liens déjà imprimés sur l'ancienne adresse `.replit.dev`, modifier l
 
 **Aucun déploiement Vercel ni transfert de données n'est effectué par cette préparation.** Pour conserver les fiches et les traces d'audit actuelles lors d'un changement d'hébergeur, organiser une migration explicite vers la base externe avant de basculer les utilisateurs.
 
+## Dépannage
+
+### `Error: No Output Directory named "public" found` / seule l'API est détectée, pas le frontend
+
+**Symptôme.** Le log de build affiche `> @workspace/api-server@0.0.0 build:vercel /vercel/path0/artifacts/api-server` puis `No Output Directory named "public" found`.
+
+**Cause.** Le **Root Directory** du projet Vercel pointe sur `artifacts/api-server` (vestige d'une ancienne architecture « API séparée »). Vercel lit alors `artifacts/api-server/package.json` — dont le `build:vercel` ne compile **que** la fonction API — et cherche le dossier `public`. Le `vercel.json` **à la racine** du dépôt n'est jamais lu dans cette configuration, car un Root Directory en sous-dossier limite Vercel à ce sous-dossier.
+
+**Correctif (dans le dashboard Vercel, à faire une fois).**
+1. *Project* → **Settings → General → Root Directory** : effacer `artifacts/api-server` pour revenir à la **racine du dépôt** (champ vide = racine). Enregistrer.
+2. Vérifier que **Build & Development Settings** sont sur *Framework Preset : Other* (ou laissés par défaut) et que *Build Command* / *Output Directory* sont **« Override » désactivé** : la source de vérité est le `vercel.json` racine (`buildCommand: pnpm run build:vercel`, `outputDirectory: artifacts/registre-parcellaire/dist/public`).
+3. Relancer un déploiement (*Redeploy* sans cache). Le log doit maintenant exécuter le build **depuis `/vercel/path0`** (la racine), compiler le frontend ET la fonction, et trouver l'output dans `artifacts/registre-parcellaire/dist/public`.
+
+Si une ancienne configuration « deux projets » (un projet API + un projet frontend) existe encore côté Vercel, supprimer le projet API séparé : le dépôt est désormais **un seul projet** servant le frontend statique et l'API via la fonction `api/index.ts`.
+
 Documentation Vercel : [Express](https://vercel.com/docs/frameworks/backend/express), [Vite et routes SPA](https://vercel.com/docs/frameworks/frontend/vite), [configuration `vercel.json`](https://vercel.com/docs/project-configuration/vercel-json) et [réécritures](https://vercel.com/docs/routing/rewrites).
