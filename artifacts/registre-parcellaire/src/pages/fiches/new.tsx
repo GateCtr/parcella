@@ -305,6 +305,13 @@ export default function FicheNew({ ficheId }: { ficheId?: string } = {}) {
 
   const onSubmit = async (data: FicheFormValues) => {
     if (!settings || isCheckingDuplicate) return;
+    // Garde-fou : ne JAMAIS enregistrer depuis une étape intermédiaire. Si la soumission
+    // est déclenchée ailleurs qu'au bouton final (ex. Entrée résiduelle), on avance d'une
+    // étape au lieu de confirmer la fiche.
+    if (activeIndex >= 0 && activeIndex < activeSteps.length - 1) {
+      await nextStep();
+      return;
+    }
     const input: FicheInput = {
       commune: data.commune,
       quartier: data.quartier,
@@ -446,7 +453,19 @@ export default function FicheNew({ ficheId }: { ficheId?: string } = {}) {
           </div>
 
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit, onInvalid)} className="space-y-8">
+            <form
+              onSubmit={form.handleSubmit(onSubmit, onInvalid)}
+              onKeyDown={(e) => {
+                // Empêche la touche Entrée de SOUMETTRE le formulaire sur une étape
+                // intermédiaire (comportement natif) : on ne valide/soumet qu'au bouton
+                // final. Dans un <textarea>, Entrée garde son rôle (saut de ligne).
+                const target = e.target as HTMLElement;
+                if (e.key === 'Enter' && target.tagName !== 'TEXTAREA') {
+                  e.preventDefault();
+                }
+              }}
+              className="space-y-8"
+            >
 
               {/* ÉTAPE 0: Localisation */}
               <div className={step === 0 ? 'block space-y-6' : 'hidden'}>
