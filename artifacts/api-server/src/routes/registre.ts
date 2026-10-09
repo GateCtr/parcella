@@ -28,6 +28,12 @@ import { requireRole, requireUser } from "../middlewares/session";
 
 const router: IRouter = Router();
 const COMMUNES = ["Bandalungwa","Barumbu","Bumbu","Gombe","Kalamu","Kasa-Vubu","Kimbanseke","Kinshasa","Kintambo","Kisenso","Lemba","Limete","Lingwala","Makala","Maluku","Masina","Matete","Mont-Ngafula","N'Djili","N'Sele","Ngaba","Ngaliema","Ngiri-Ngiri","Selembao"];
+// Communes ACTIVES exposées par l'API (sélecteurs + création de fiche). Pour l'instant on
+// n'active que Mont-Ngafula ; les autres sont masquées. Pour en réactiver, ajouter leur nom
+// (identique à COMMUNES) à cet ensemble — ou le vider pour tout réactiver.
+const COMMUNES_ACTIVES = new Set<string>(["Mont-Ngafula"]);
+const communesActives = () =>
+  COMMUNES_ACTIVES.size === 0 ? COMMUNES : COMMUNES.filter((nom) => COMMUNES_ACTIVES.has(nom));
 const code = (name: string) => name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Za-z]/g, "").slice(0, 3).toUpperCase();
 
 function userId(req: Request) {
@@ -51,7 +57,7 @@ function plaqueForCurrentOrigin(plaque: typeof plaquesTable.$inferSelect): { svg
     return unavailable;
   }
 }
-router.get("/communes", (_req, res) => res.json(COMMUNES.map((nom) => ({ code: code(nom), nom }))));
+router.get("/communes", (_req, res) => res.json(communesActives().map((nom) => ({ code: code(nom), nom }))));
 router.get("/public/plaques", async (req, res): Promise<void> => {
   res.set({ "Cache-Control": "no-store", "Referrer-Policy": "no-referrer", "X-Robots-Tag": "noindex, nofollow" });
   const parsed = GetPublicPlaqueQueryParams.safeParse(req.query);
@@ -174,7 +180,7 @@ router.get("/fiches/:id", async (req, res): Promise<void> => {
   res.json(publicFiche(row));
 });
 
-router.patch("/fiches/:id", async (req, res): Promise<void> => {
+router.patch("/fiches/:id", requireRole("admin_principal"), async (req, res): Promise<void> => {
   const p = UpdateFicheParams.safeParse(req.params); const b = UpdateFicheBody.safeParse(req.body);
   if (!p.success || !b.success) { res.status(400).json({ error: "Données invalides" }); return; }
   const [before] = await db.select().from(fichesTable).where(eq(fichesTable.id,p.data.id));
