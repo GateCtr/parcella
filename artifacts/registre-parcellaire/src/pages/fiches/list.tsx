@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Search, Plus, Eye, MapPin, Calendar } from 'lucide-react';
+import { CommuneCombobox } from '@/components/commune-combobox';
 import { DataSpinner } from '@/components/data-spinner';
 import { DataPagination } from '@/components/data-pagination';
 import { usePagination } from '@/hooks/use-pagination';
@@ -66,17 +67,17 @@ export default function FichesList() {
           />
         </div>
         <div className="flex gap-4 w-full md:w-auto">
-          <Select value={commune} onValueChange={setCommune} disabled={loadingCommunes || communesError}>
-            <SelectTrigger className="w-full md:w-[180px]">
-              <SelectValue placeholder="Commune" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="toutes">Toutes les communes</SelectItem>
-              {communes?.map(c => (
-                <SelectItem key={c.nom} value={c.nom}>{c.nom}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="w-full md:w-[200px]">
+            <CommuneCombobox
+              value={commune}
+              onChange={setCommune}
+              disabled={loadingCommunes || communesError}
+              allOption={{ label: 'Toutes les communes', value: 'toutes' }}
+              options={(communes ?? []).map((c) => ({ label: c.nom, value: c.nom }))}
+              placeholder="Commune"
+              aria-label="Filtrer par commune"
+            />
+          </div>
 
           <Select value={statut} onValueChange={setStatut}>
             <SelectTrigger className="w-full md:w-[150px]">

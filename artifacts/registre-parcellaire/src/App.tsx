@@ -23,6 +23,9 @@ import { DataSpinner } from '@/components/data-spinner';
 const Dashboard = lazyWithReload(() => import('@/pages/dashboard'));
 const FichesList = lazyWithReload(() => import('@/pages/fiches/list'));
 const FicheNew = lazyWithReload(() => import('@/pages/fiches/new'));
+// Édition d'une fiche (admin principal) : réutilise le formulaire de prospection en mode édition.
+const FicheEditForm = lazyWithReload(() => import('@/pages/fiches/new'));
+const FicheEdit = ({ id }: { id: string }) => <FicheEditForm ficheId={id} />;
 const FicheDetail = lazyWithReload(() => import('@/pages/fiches/detail'));
 const FicheExample = lazyWithReload(() => import('@/pages/fiches/example'));
 const Imprimerie = lazyWithReload(() => import('@/pages/imprimerie'));
@@ -119,6 +122,15 @@ function Router() {
 
         <Route path="/fiches/exemple">
           {() => <Suspense fallback={<DataSpinner />}><FicheExample /></Suspense>}
+        </Route>
+
+        <Route path="/fiches/:id/modifier">
+          {(params) => (
+            <ProtectedRoute
+              component={() => <FicheEdit id={params.id} />}
+              allowedRoles={['admin_principal']}
+            />
+          )}
         </Route>
 
         <Route path="/fiches/:id">

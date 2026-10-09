@@ -3,7 +3,8 @@ import { useForm, type FieldErrors } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Link, useLocation } from 'wouter';
-import { useCreateFiche, useListCommunes, useGetRubriqueSettings, getGetRubriqueSettingsQueryKey, checkFicheDuplicate, FicheInput } from '@workspace/api-client-react';
+import { useCreateFiche, useUpdateFiche, useGetFiche, useListCommunes, useGetRubriqueSettings, getGetRubriqueSettingsQueryKey, getGetFicheQueryKey, getListFichesQueryKey, checkFicheDuplicate, FicheInput, type Fiche } from '@workspace/api-client-react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -20,7 +21,8 @@ import {
   visibiliteOptions, canalisationOptions, risqueOptions, activitesOptions,
   avisGlobalOptions, prioriteOptions, suiviOptions
 } from '@/components/fiche/constants';
-import { CustomRadioGroup, CustomMultiSelect, CustomSelect } from '@/components/fiche/form-helpers';
+import { CustomRadioGroup, CustomMultiSelect } from '@/components/fiche/form-helpers';
+import { CommuneCombobox } from '@/components/commune-combobox';
 import { RUBRIQUES, type RubriqueKey } from '@/lib/rubriques';
 
 const ficheSchema = z.object({
@@ -107,18 +109,58 @@ const STEPS = [
   { id: 9, title: 'Avis & Admin.', icon: ClipboardCheck },
 ];
 
-export default function FicheNew() {
+/** Reconstruit les valeurs plates du formulaire à partir d'une fiche existante (mode édition). */
+function ficheToFormValues(f: Fiche): Partial<FicheFormValues> {
+  const h = (f.hygiene ?? {}) as Record<string, string>;
+  const d = (f.dechets ?? {}) as Record<string, string>;
+  const fa = (f.facade ?? {}) as Record<string, string>;
+  const dr = (f.drainage ?? {}) as Record<string, string>;
+  const av = (f.avis ?? {}) as Record<string, unknown>;
+  return {
+    commune: f.commune, quartier: f.quartier, localite: f.localite ?? '',
+    avenue: f.avenue, parcelleNo: f.parcelleNo,
+    proprietaireNom: f.proprietaireNom, telephone: f.telephone,
+    typeOccupation: f.typeOccupation, usageParcelle: f.usageParcelle,
+    superficie: (f.superficie ?? '') as any,
+    plaqueExistante: f.plaqueExistante ?? '', statutPaiement: f.statutPaiement ?? '',
+    recuNo: f.recuNo ?? '', sensibilisation: f.sensibilisation ?? '',
+    hygiene_proprete: h.proprete ?? '', hygiene_ordures: h.ordures ?? '', hygiene_vegetation: h.vegetation ?? '',
+    hygiene_latrines: h.latrines ?? '', hygiene_eauxStagnantes: h.eauxStagnantes ?? '',
+    dechets_modeElimination: d.modeElimination ?? '', dechets_bacOrdures: d.bacOrdures ?? '', dechets_visibles: d.visibles ?? '',
+    facade_etat: fa.etat ?? '', facade_cloture: fa.cloture ?? '', facade_emplacement: fa.emplacement ?? '',
+    facade_emplacementAutre: fa.emplacementAutre ?? '', facade_visibilite: fa.visibilite ?? '',
+    drainage_canal: dr.canal ?? '', drainage_risque: dr.risque ?? '',
+    activites: Array.isArray(f.activites) ? f.activites : [],
+    activites_autres: '',
+    remarques: f.remarques ?? '',
+    avis_global: (av.global as string) ?? '', avis_priorite: (av.priorite as string) ?? '',
+    avis_suivi: Array.isArray(av.suivi) ? (av.suivi as string[]) : [],
+    avis_attestation: true, // déjà certifiée à la création
+    agentMatricule: f.agentMatricule ?? '', chefRueNom: f.chefRueNom ?? '', chefRueAvenue: f.chefRueAvenue ?? '',
+    dateProspection: f.dateProspection ? f.dateProspection.split('T')[0] : new Date().toISOString().split('T')[0],
+  };
+}
+
+export default function FicheNew({ ficheId }: { ficheId?: string } = {}) {
+  const isEdit = Boolean(ficheId);
   const [step, setStep] = useState(0);
   const [isCheckingDuplicate, setIsCheckingDuplicate] = useState(false);
+  const [prefilled, setPrefilled] = useState(false);
   const pageRef = useRef<HTMLDivElement>(null);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const { data: communes, isLoading: loadingCommunes, isError: communesError } = useListCommunes();
   const { data: settings, isLoading: loadingSettings, isError: settingsError } = useGetRubriqueSettings({
     query: { queryKey: getGetRubriqueSettingsQueryKey(), refetchInterval: 30_000 },
   });
+  const { data: existingFiche, isLoading: loadingFiche, isError: ficheError } = useGetFiche(ficheId ?? '', {
+    query: { queryKey: getGetFicheQueryKey(ficheId ?? ''), enabled: isEdit },
+  });
   const createFiche = useCreateFiche();
+  const updateFiche = useUpdateFiche();
+  const isSaving = createFiche.isPending || updateFiche.isPending;
   const activeSteps = useMemo(
     () => STEPS.filter((item) => item.id < 2 || settings?.[RUBRIQUES[item.id - 2].key] === true),
     [settings],
@@ -162,6 +204,14 @@ export default function FicheNew() {
     },
     mode: 'onChange'
   });
+
+  // Mode édition : préremplir le formulaire une fois la fiche chargée.
+  useEffect(() => {
+    if (isEdit && existingFiche && !prefilled) {
+      form.reset({ ...form.getValues(), ...ficheToFormValues(existingFiche) });
+      setPrefilled(true);
+    }
+  }, [isEdit, existingFiche, prefilled, form]);
 
   useEffect(() => {
     if (settings && activeIndex < 0) {
@@ -226,7 +276,8 @@ export default function FicheNew() {
       return;
     }
 
-    if (step === 0 && !(await checkAddress(form.getValues()))) return;
+    // En édition, on ne vérifie pas les doublons (l'adresse existe déjà = cette fiche).
+    if (!isEdit && step === 0 && !(await checkAddress(form.getValues()))) return;
     setStep(activeSteps[activeIndex + 1].id);
   };
 
@@ -320,6 +371,21 @@ export default function FicheNew() {
       dateProspection: new Date(data.dateProspection).toISOString(),
     };
 
+    if (isEdit && ficheId) {
+      updateFiche.mutate({ id: ficheId, data: input }, {
+        onSuccess: (res) => {
+          queryClient.setQueryData(getGetFicheQueryKey(ficheId), res);
+          queryClient.invalidateQueries({ queryKey: getListFichesQueryKey() });
+          toast({ title: 'Fiche modifiée', description: 'Les modifications ont été enregistrées.' });
+          setLocation(`/fiches/${ficheId}`);
+        },
+        onError: () => {
+          toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de modifier la fiche.' });
+        },
+      });
+      return;
+    }
+
     createFiche.mutate({ data: input }, {
       onSuccess: (res) => {
         toast({ title: 'Succès', description: 'La fiche a été enregistrée avec succès.' });
@@ -334,16 +400,19 @@ export default function FicheNew() {
   const StepIcon = STEPS[step].icon;
   const communeOptions = communes?.map(c => ({ label: c.nom, value: c.nom })) || [];
 
-  if (loadingSettings) return <DataSpinner label="Chargement des rubriques actives…" />;
+  if (loadingSettings || (isEdit && loadingFiche)) return <DataSpinner label={isEdit ? 'Chargement de la fiche…' : 'Chargement des rubriques actives…'} />;
   if (settingsError || !settings) return <p role="alert" className="text-destructive">Impossible de charger les paramètres des rubriques. Réessayez avant de créer une fiche.</p>;
+  if (isEdit && (ficheError || !existingFiche)) return <p role="alert" className="text-destructive">Impossible de charger la fiche à modifier.</p>;
 
   return (
     <div ref={pageRef} className="mx-auto w-full min-w-0 max-w-3xl space-y-6 pb-12">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <h1 className="text-2xl font-bold tracking-tight">Nouvelle prospection</h1>
+          <h1 className="text-2xl font-bold tracking-tight">{isEdit ? 'Modifier la fiche' : 'Nouvelle prospection'}</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Remplissez le formulaire ci-dessous. La fiche complète s’affichera sur une autre page après l’enregistrement.
+            {isEdit
+              ? `Modifiez les informations de la fiche ${existingFiche?.ficheNo ?? ''}. Les plaques déjà générées seront marquées « à réimprimer ».`
+              : 'Remplissez le formulaire ci-dessous. La fiche complète s’affichera sur une autre page après l’enregistrement.'}
           </p>
         </div>
         <div className="flex min-w-0 flex-wrap gap-2 sm:shrink-0">
@@ -388,7 +457,22 @@ export default function FicheNew() {
                       {loadingCommunes ? (
                         <DataSpinner compact label="Chargement..." />
                       ) : (
-                        <CustomSelect form={form} name="commune" label="Commune *" options={communeOptions} />
+                        <FormField control={form.control} name="commune" render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-base font-semibold">Commune *</FormLabel>
+                            <FormControl>
+                              <CommuneCombobox
+                                value={field.value}
+                                onChange={field.onChange}
+                                options={communeOptions}
+                                placeholder="Sélectionner une commune"
+                                triggerClassName="h-12"
+                                aria-label="Commune"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )} />
                       )}
                       {communesError && <p className="text-sm text-destructive mt-1">Erreur de chargement</p>}
                     </div>
@@ -608,7 +692,7 @@ export default function FicheNew() {
                   type="button"
                   variant="outline"
                   onClick={prevStep}
-                  disabled={activeIndex <= 0 || isCheckingDuplicate || createFiche.isPending}
+                  disabled={activeIndex <= 0 || isCheckingDuplicate || isSaving}
                   className="h-12 px-3 sm:px-6"
                 >
                   <ChevronLeft className="mr-2 h-5 w-5" /> Précédent
@@ -631,12 +715,12 @@ export default function FicheNew() {
                   <Button
                     type="submit"
                     className="h-12 px-3 sm:px-8 bg-green-600 hover:bg-green-700 text-white font-bold"
-                    disabled={createFiche.isPending || isCheckingDuplicate || (step === 0 && (loadingCommunes || communesError))}
+                    disabled={isSaving || isCheckingDuplicate || (step === 0 && (loadingCommunes || communesError))}
                   >
-                    {createFiche.isPending ? (
+                    {isSaving ? (
                       <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Enregistrement...</>
                     ) : (
-                      <>Enregistrer la fiche <CheckCircle2 className="ml-2 h-5 w-5" /></>
+                      <>{isEdit ? 'Enregistrer les modifications' : 'Enregistrer la fiche'} <CheckCircle2 className="ml-2 h-5 w-5" /></>
                     )}
                   </Button>
                 )}

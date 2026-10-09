@@ -4,7 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { DataSpinner } from '@/components/data-spinner';
-import { Printer, ArrowLeft, CheckCircle, XCircle, Image as ImageIcon } from 'lucide-react';
+import { Printer, ArrowLeft, CheckCircle, XCircle, Image as ImageIcon, Pencil } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -51,6 +51,7 @@ export default function FicheDetail({ exampleFiche }: { exampleFiche?: Fiche }) 
   const isExample = Boolean(exampleFiche);
 
   const canValidate = user?.role === 'admin_principal' || user?.role === 'validateur';
+  const isAdmin = user?.role === 'admin_principal';
 
   const { data: savedFiche, isLoading, error } = useGetFiche(id ?? '', {
     query: { queryKey: getGetFicheQueryKey(id ?? ''), enabled: !isExample && Boolean(id) },
@@ -141,6 +142,15 @@ export default function FicheDetail({ exampleFiche }: { exampleFiche?: Fiche }) 
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          {!isExample && isAdmin && (
+            <Link
+              href={`/fiches/${fiche.id}/modifier`}
+              className={buttonVariants({ variant: 'outline' })}
+            >
+              <Pencil className="mr-2 h-4 w-4" /> Modifier
+            </Link>
+          )}
+
           {!isExample && fiche.statutFiche === 'soumise' && canValidate && (
             <>
               <Button
